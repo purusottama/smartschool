@@ -1,0 +1,66 @@
+<?php defined('BASEPATH') OR exit('No direct script access allowed');
+
+$query_builder = TRUE;
+
+/* Default DB (starschool) */
+$db['default'] = array(
+    //'hostname' => '82.25.121.84',
+    //'username' => 'u639875876_sms', //sms
+    //'password' => 'u639875876_SMS', //Sms@1234
+    //'database' => 'u639875876_sms',
+    'hostname' => 'localhost',
+    'username' => 'root', //sms
+    'password' => '', //Sms@1234
+    'database' => 'sms', //sms2
+
+    'dbdriver' => 'mysqli',
+    'pconnect' => FALSE,
+    'db_debug' => (ENVIRONMENT !== 'production'),
+    'char_set' => 'utf8',
+    'dbcollat' => 'utf8_general_ci',
+);
+
+/* School DB */
+$db['school'] = array(
+    'hostname' => 'localhost',
+    'username' => 'root', //sms
+    'password' => '', //Sms@1234
+    'database' => 'sms', //sms2
+    'dbdriver' => 'mysqli',
+    'pconnect' => FALSE,
+    'db_debug' => (ENVIRONMENT !== 'production'),
+    'char_set' => 'utf8',
+    'dbcollat' => 'utf8_general_ci',
+);
+
+/* School annssms DB */
+$db['mountschool'] = array(
+    'hostname' => 'localhost',
+    'username' => 'root', //sms
+    'password' => '', //Sms@1234
+    'database' => 'sms', //sms2
+    'dbdriver' => 'mysqli',
+    'pconnect' => FALSE,
+    'db_debug' => (ENVIRONMENT !== 'production'),
+    'char_set' => 'utf8',
+    'dbcollat' => 'utf8_general_ci',
+);
+
+/* School annssms DB */
+$db['annsschool'] = array(
+    'hostname' => 'localhost',
+    'username' => 'root', //sms
+    'password' => '', //Sms@1234
+    'database' => 'sms', //sms2
+    'dbdriver' => 'mysqli',
+    'pconnect' => FALSE,
+    'db_debug' => (ENVIRONMENT !== 'production'),
+    'char_set' => 'utf8',
+    'dbcollat' => 'utf8_general_ci',
+);
+
+
+
+
+/* Default active group (temporary, will be overridden by hook) */
+$active_group = 'default';
