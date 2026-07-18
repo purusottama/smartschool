@@ -13,8 +13,8 @@ $db['default'] = array(
     //'password'     => 'NewStrongPassword123!',
     //'database'     => 'sms',
     'hostname' => 'localhost',
-    'username' => 'rootuser', //sms
-    'password' => 'SMS@Password', //Sms@1234
+    'username' => 'root', //sms
+    'password' => '', //Sms@1234
     'database' => 'sms', //sms2
 
     'dbdriver' => 'mysqli',
