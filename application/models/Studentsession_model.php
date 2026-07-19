@@ -79,17 +79,24 @@ class Studentsession_model extends CI_Model
         return $query->row();
     }
 
+    /** Multi-School: SQL fragment scoping to the session's school (empty in All mode / no context). */
+    private function schoolFilter($alias = 'students')
+    {
+        $sid = $this->session->userdata('school_id');
+        return ($sid && $sid !== 'all') ? " and " . $alias . ".school_id=" . (int) $sid . " " : "";
+    }
+
     public function getTotalStudentBySession()
     {
-        $query = "SELECT count(*) as `total_student` FROM `student_session` INNER JOIN students on students.id=student_session.student_id where student_session.session_id=" . $this->db->escape($this->current_session) . " and students.is_active = 'yes' ";
+        $query = "SELECT count(*) as `total_student` FROM `student_session` INNER JOIN students on students.id=student_session.student_id where student_session.session_id=" . $this->db->escape($this->current_session) . " and students.is_active = 'yes' " . $this->schoolFilter('students');
         $query = $this->db->query($query);
         return $query->row();
     }
 
     public function getTotalHeadCountBySession()
     {
-        $query = "SELECT count(*) as `total_student` FROM `student_session` INNER JOIN students on students.id=student_session.student_id where student_session.session_id=" . $this->db->escape($this->current_session) . " and students.is_active = 'yes' group by student_session.student_id";
-        $query = $this->db->query($query);        
+        $query = "SELECT count(*) as `total_student` FROM `student_session` INNER JOIN students on students.id=student_session.student_id where student_session.session_id=" . $this->db->escape($this->current_session) . " and students.is_active = 'yes' " . $this->schoolFilter('students') . " group by student_session.student_id";
+        $query = $this->db->query($query);
         return $query->result();
     }
 

@@ -12,11 +12,18 @@ class Login extends MY_Controller
         parent::__construct();
         $this->load->model('setting_model');
         $this->load->library('customlib');
+        $this->load->library('tenant_lib');
     }
 
      public function login()
 {
     $this->output->set_content_type('application/json');
+
+    // Multi-School: resolve the tenant from school_id/school_code (POST/GET/header)
+    // and set the tenant context BEFORE authenticating. Backward compatible:
+    // with no school supplied, currentSchoolId() falls back to school #1.
+    $school    = $this->tenant_lib->resolveFromRequest();
+    $school_id = $school ? (int) $school->id : $this->tenant_lib->currentSchoolId();
 
     $username = $this->input->post('username', TRUE);
     $password = $this->input->post('password', TRUE);
@@ -31,11 +38,11 @@ class Login extends MY_Controller
             ]));
     }
 
-    $student = $this->db
-        ->where('username', $username)
-        ->where('password', $password)
-        ->get('users')
-        ->row();
+    $this->db->where('username', $username)->where('password', $password);
+    if (!empty($school_id) && $school_id !== Tenant_lib::ALL) {
+        $this->db->where('school_id', $school_id); // Multi-School: scope login to this tenant
+    }
+    $student = $this->db->get('users')->row();
 
     if (!$student) {
         return $this->output
@@ -284,7 +291,16 @@ public function staffLogin()
             );
             
             $setting_result        = $this->setting_model->get();
-            $result                = $this->staff_model->checkLogin($login_post);           
+
+            // Multi-School: scope staff login to the requested tenant (school_id/school_code).
+            // Backward compatible: with no school supplied, defaults to school #1.
+            $this->tenant_lib->resolveFromRequest();
+            $req_school            = $this->tenant_lib->currentSchoolId();
+            $result                = $this->staff_model->checkLogin($login_post);
+            if ($result && $req_school && $req_school !== Tenant_lib::ALL
+                && isset($result->school_id) && (int) $result->school_id !== (int) $req_school) {
+                $result = false; // credentials belong to a different school
+            }
            
             if (!empty($result->language_id)) {
                 $lang_array = array('lang_id' => $result->language_id, 'language' => $result->language);

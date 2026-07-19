@@ -24,7 +24,20 @@ class Auth extends CI_Controller
                 $username = $params['username'];
                 $password = $params['password'];
                 $app_key  = $params['deviceToken'];
-                $response = $this->auth_model->login($username, $password, $app_key);
+
+                // Multi-School (shared-DB): resolve the tenant this login targets.
+                // Accept school_id, or school_code (looked up in the schools registry).
+                // Falls back to school #1 for backward-compatible single-school installs.
+                $school_id = isset($params['school_id']) ? (int) $params['school_id'] : 0;
+                if (!$school_id && !empty($params['school_code'])) {
+                    $srow = $this->db->where('code', $params['school_code'])->where('is_active', 1)->get('schools')->row();
+                    $school_id = $srow ? (int) $srow->id : 0;
+                }
+                if (!$school_id) {
+                    $school_id = 1;
+                }
+
+                $response = $this->auth_model->login($username, $password, $app_key, $school_id);
                 json_output(200, $response);
             }
         }

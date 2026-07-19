@@ -156,6 +156,12 @@ class Site extends Public_Controller
 
                     $this->session->set_userdata('admin', $session_data);
 
+                    // Multi-School (shared-DB): pin this user to their school; super admin => All.
+                    $this->load->library('tenant_lib');
+                    $is_super        = $this->tenant_lib->isSuperAdmin();
+                    $staff_school_id = isset($result->school_id) ? $result->school_id : 1;
+                    $this->tenant_lib->bindAtLogin($staff_school_id, $is_super);
+
                     $role      = $this->customlib->getStaffRole();
                     $role_name = json_decode($role)->name;
                     $this->customlib->setUserLog($this->input->post('username'), $role_name);

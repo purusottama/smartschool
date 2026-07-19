@@ -27,12 +27,12 @@ class Auth_model extends CI_Model
         }
     }
 
-    public function login($username, $password, $app_key)
+    public function login($username, $password, $app_key, $school_id = 1)
     {
         $resultdata    = $this->setting_model->getSetting();
-        
+
         if($resultdata->student_panel_login){
-            $q = $this->checkLogin($username, $password);
+            $q = $this->checkLogin($username, $password, $school_id);
         }else{
             return array('status' => 0, 'message' => 'Your account is suspended'); 
         }
@@ -115,6 +115,7 @@ class Auth_model extends CI_Model
                                 'student_session_id'           => $result->student_session_id,
                                 'start_week'      => $setting_result[0]['start_week'],
                                 'superadmin_restriction'      => $setting_result[0]['superadmin_restriction'],
+                                'school_id'       => $school_id,
                             );
                             $this->session->set_userdata('student', $session_data);
                             if ($this->db->trans_status() === false) {
@@ -194,6 +195,7 @@ class Auth_model extends CI_Model
                             'image'           => $image,
                             'start_week'      => $setting_result[0]['start_week'],
                             'superadmin_restriction'      => $setting_result[0]['superadmin_restriction'],
+                            'school_id'       => $school_id,
                         );
 
                         $user_id        = ($result->id);
@@ -243,19 +245,22 @@ class Auth_model extends CI_Model
         }
     }
 
-    public function checkLogin($username, $password)
+    public function checkLogin($username, $password, $school_id = 1)
     {
         $resultdata    = $this->setting_model->get();
         $student_login = json_decode($resultdata[0]['student_login']);
         $parent_login  = json_decode($resultdata[0]['parent_login']);
-        
+
         $this->db->select('users.id as id, username, password,role,users.is_active as is_active,lang_id');
         $this->db->from('users');
         $this->db->join('students', 'students.id = users.user_id');
         $this->db->where('password', $password);
-        
-        $this->db->group_start();        
-        $this->db->where('username', $username); 
+        if (!empty($school_id)) {
+            $this->db->where('users.school_id', $school_id); // Multi-School: scope student login to this tenant
+        }
+
+        $this->db->group_start();
+        $this->db->where('username', $username);
         
         if(!empty($student_login)){
             if (in_array("admission_no", $student_login)) {
@@ -281,10 +286,13 @@ class Auth_model extends CI_Model
             $this->db->select('users.id as id, username, password,role,users.is_active as is_active,lang_id');
             $this->db->from('users');
             $this->db->join('students', 'students.parent_id = users.id');
-            $this->db->where('password', $password);                       
-            
-            $this->db->group_start();            
-            $this->db->where('username', $username); 
+            $this->db->where('password', $password);
+            if (!empty($school_id)) {
+                $this->db->where('users.school_id', $school_id); // Multi-School: scope parent login to this tenant
+            }
+
+            $this->db->group_start();
+            $this->db->where('username', $username);
             
             if(!empty($parent_login)){
                 if (in_array("mobile_number", $parent_login)) {

@@ -41,4 +41,39 @@ class MY_Model extends CI_Model {
         $this->db->insert('logs', $insert);
     }
 
+    // ------------------------------------------------------------------
+    // Shared-DB multi-tenancy helpers (Option B).
+    // Any model extending MY_Model can scope/stamp without wiring the library.
+    // ------------------------------------------------------------------
+
+    /** Lazy-load the tenant context library (models construct before the hook). */
+    protected function tenant()
+    {
+        if (!isset($this->tenant_lib)) {
+            $this->load->library('tenant_lib');
+        }
+        return $this->tenant_lib;
+    }
+
+    /**
+     * Apply the current school filter to the active query builder.
+     * Usage:  $this->tenantScope('students')->get('students');
+     */
+    protected function tenantScope($alias = null)
+    {
+        return $this->tenant()->scope($alias); // returns $this->db for chaining
+    }
+
+    /** Add school_id to a row before insert/update. */
+    protected function tenantStamp(array $data)
+    {
+        return $this->tenant()->stamp($data);
+    }
+
+    /** SQL fragment ("AND t.school_id = N") for raw string queries. */
+    protected function tenantWhereSql($alias = null)
+    {
+        return $this->tenant()->whereSql($alias);
+    }
+
 }

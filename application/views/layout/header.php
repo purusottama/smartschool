@@ -224,7 +224,39 @@ if ($user_id == 99999999) {
                                     <?php
 }?>
 
-                                <ul class="nav navbar-nav headertopmenu">                                
+                                <ul class="nav navbar-nav headertopmenu">
+                                    <?php
+                                    // Multi-School: super-admin school selector (shared-DB tenancy)
+                                    $__ud_ss  = $this->customlib->getUserData();
+                                    $__schools = array();
+                                    if (isset($__ud_ss['role_id']) && (int) $__ud_ss['role_id'] === 7) {
+                                        try {
+                                            $__ci_ss =& get_instance();          // robust: never rely on $this-> in a view
+                                            $__ci_ss->load->model('school_model');
+                                            $__schools = $__ci_ss->school_model->getAll();
+                                        } catch (Exception $__e_ss) {
+                                            log_message('error', 'school switcher menu: ' . $__e_ss->getMessage());
+                                            $__schools = array();
+                                        }
+                                        $__current = $this->session->userdata('school_id');
+                                        $__label   = ($__current === 'all' || $__current === null) ? 'All Schools' : 'School #' . $__current;
+                                        foreach ($__schools as $__s) {
+                                            if ($__current !== 'all' && (int) $__current === (int) $__s['id']) {
+                                                $__label = $__s['name'];
+                                            }
+                                        }
+                                        ?>
+                                        <li class="dropdown school-switch-menu" data-toggle="tooltip" title="Switch School">
+                                            <a href="#" class="dropdown-toggle" data-toggle="dropdown"><i class="fa fa-university"></i> <span class="hidden-xs"><?php echo html_escape($__label); ?></span> <span class="caret"></span></a>
+                                            <ul class="dropdown-menu menuboxshadow" style="min-width:220px">
+                                                <li><a href="<?php echo base_url('schoolswitch/set/all'); ?>"><i class="fa fa-globe"></i> All Schools (reports)</a></li>
+                                                <li class="divider"></li>
+                                                <?php foreach ($__schools as $__s) { if (!$__s['is_active']) continue; ?>
+                                                    <li><a href="<?php echo base_url('schoolswitch/set/' . $__s['id']); ?>"><i class="fa fa-graduation-cap"></i> <?php echo html_escape($__s['name']); ?></a></li>
+                                                <?php } ?>
+                                            </ul>
+                                        </li>
+                                    <?php } ?>
                                     <?php $userdata = $this->customlib->getUserData();
                                     if($userdata["role_id"] ==7){                                    
                                         if (($this->module_lib->hasModule('multi_branch') && $this->module_lib->hasActive('multi_branch')) || $this->db->multi_branch) { ?>

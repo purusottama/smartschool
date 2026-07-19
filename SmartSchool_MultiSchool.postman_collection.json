@@ -1,0 +1,609 @@
+{
+    "info": {
+        "name": "Smart School \u2014 Multi-School (2 schools, all roles)",
+        "description": "Multi-tenant demo. Pick a school via {{school_id}}/{{school_code}} then run a login.\n\nAuth paths:\n- Student/Parent: POST {{base_url}}/api/auth/login (returns token -> auto-stored in {{access_token}}).\n- Staff (Admin/Teacher/Accountant): POST {{base_url}}/customapi/login/staffLogin (session-based).\n\nSwitch schools by changing {{school_id}} (1=Greenwood, 2=Sunrise) and the matching credentials in the environment.",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+        {
+            "name": "0. Schools",
+            "item": [
+                {
+                    "name": "Schools :: list",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "urlencoded",
+                            "urlencoded": []
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/customapi/schools/list",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "customapi",
+                                "schools",
+                                "list"
+                            ]
+                        },
+                        "description": "Public list of active schools for the app login-screen picker."
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "var j = pm.response.json();",
+                                    "pm.test('has schools', function(){ pm.expect(j.status).to.eql(true); });"
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "1. Login \u2014 Student & Parent (token)",
+            "item": [
+                {
+                    "name": "Student login (uses {{school_id}})",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Client-Service",
+                                "value": "smartschool"
+                            },
+                            {
+                                "key": "Auth-Key",
+                                "value": "schoolAdmin@"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"username\": \"{{student_user}}\",\n    \"password\": \"{{student_pass}}\",\n    \"deviceToken\": \"postman-device\",\n    \"school_id\": \"{{school_id}}\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/auth/login",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "login"
+                            ]
+                        },
+                        "description": "Scoped to {{school_id}}. Auto-stores {{access_token}}, {{user_id}}, {{student_id}}."
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "var j = pm.response.json();",
+                                    "if (j && j.token) { pm.environment.set('access_token', j.token); console.log('token stored'); }",
+                                    "if (j && j.id) { pm.environment.set('user_id', j.id); }",
+                                    "if (j && j.record && j.record.student_id) { pm.environment.set('student_id', j.record.student_id); }",
+                                    "pm.test('login success', function(){ pm.expect(String(j.status)).to.eql('1'); });"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Parent login (uses {{school_id}})",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Client-Service",
+                                "value": "smartschool"
+                            },
+                            {
+                                "key": "Auth-Key",
+                                "value": "schoolAdmin@"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"username\": \"{{parent_user}}\",\n    \"password\": \"{{parent_pass}}\",\n    \"deviceToken\": \"postman-device\",\n    \"school_id\": \"{{school_id}}\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/auth/login",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "login"
+                            ]
+                        },
+                        "description": "Scoped to {{school_id}}."
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "var j = pm.response.json();",
+                                    "if (j && j.token) { pm.environment.set('access_token', j.token); console.log('token stored'); }",
+                                    "if (j && j.id) { pm.environment.set('user_id', j.id); }",
+                                    "if (j && j.record && j.record.student_id) { pm.environment.set('student_id', j.record.student_id); }",
+                                    "pm.test('login success', function(){ pm.expect(String(j.status)).to.eql('1'); });"
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "2. Login \u2014 Staff (Admin/Teacher/Accountant)",
+            "item": [
+                {
+                    "name": "School Admin login",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "urlencoded",
+                            "urlencoded": [
+                                {
+                                    "key": "username",
+                                    "value": "{{admin_email}}",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "password",
+                                    "value": "{{staff_pass}}",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "school_id",
+                                    "value": "{{school_id}}",
+                                    "type": "text"
+                                }
+                            ]
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/customapi/login/staffLogin",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "customapi",
+                                "login",
+                                "staffLogin"
+                            ]
+                        },
+                        "description": "School Admin of the selected school (session-based)."
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "var j = pm.response.json();",
+                                    "pm.test('staff login ok', function(){ pm.expect(j.status).to.eql(true); });",
+                                    "if (j && j.result && j.result.id) { pm.environment.set('staff_id', j.result.id); }"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Teacher login",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "urlencoded",
+                            "urlencoded": [
+                                {
+                                    "key": "username",
+                                    "value": "{{teacher_email}}",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "password",
+                                    "value": "{{staff_pass}}",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "school_id",
+                                    "value": "{{school_id}}",
+                                    "type": "text"
+                                }
+                            ]
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/customapi/login/staffLogin",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "customapi",
+                                "login",
+                                "staffLogin"
+                            ]
+                        },
+                        "description": "Teacher of the selected school (session-based)."
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "var j = pm.response.json();",
+                                    "pm.test('staff login ok', function(){ pm.expect(j.status).to.eql(true); });",
+                                    "if (j && j.result && j.result.id) { pm.environment.set('staff_id', j.result.id); }"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Accountant login",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "urlencoded",
+                            "urlencoded": [
+                                {
+                                    "key": "username",
+                                    "value": "{{accountant_email}}",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "password",
+                                    "value": "{{staff_pass}}",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "school_id",
+                                    "value": "{{school_id}}",
+                                    "type": "text"
+                                }
+                            ]
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/customapi/login/staffLogin",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "customapi",
+                                "login",
+                                "staffLogin"
+                            ]
+                        },
+                        "description": "Accountant of the selected school (session-based)."
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "var j = pm.response.json();",
+                                    "pm.test('staff login ok', function(){ pm.expect(j.status).to.eql(true); });",
+                                    "if (j && j.result && j.result.id) { pm.environment.set('staff_id', j.result.id); }"
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "3. Student data (scoped by {{school_id}})",
+            "item": [
+                {
+                    "name": "Common :: getStudentProfiles",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{access_token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "urlencoded",
+                            "urlencoded": [
+                                {
+                                    "key": "user_id",
+                                    "value": "{{user_id}}",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "student_id",
+                                    "value": "{{student_id}}",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "school_id",
+                                    "value": "{{school_id}}",
+                                    "type": "text"
+                                }
+                            ]
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/customapi/common/getStudentProfiles",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "customapi",
+                                "common",
+                                "getStudentProfiles"
+                            ]
+                        },
+                        "description": "Returns data only for {{school_id}} once models are scoped."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Common :: getStudentFee",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{access_token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "urlencoded",
+                            "urlencoded": [
+                                {
+                                    "key": "user_id",
+                                    "value": "{{user_id}}",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "student_id",
+                                    "value": "{{student_id}}",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "school_id",
+                                    "value": "{{school_id}}",
+                                    "type": "text"
+                                }
+                            ]
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/customapi/common/getStudentFee",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "customapi",
+                                "common",
+                                "getStudentFee"
+                            ]
+                        },
+                        "description": "Returns data only for {{school_id}} once models are scoped."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Common :: timetable",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{access_token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "urlencoded",
+                            "urlencoded": [
+                                {
+                                    "key": "user_id",
+                                    "value": "{{user_id}}",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "student_id",
+                                    "value": "{{student_id}}",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "school_id",
+                                    "value": "{{school_id}}",
+                                    "type": "text"
+                                }
+                            ]
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/customapi/common/timetable",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "customapi",
+                                "common",
+                                "timetable"
+                            ]
+                        },
+                        "description": "Returns data only for {{school_id}} once models are scoped."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Common :: attendence",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{access_token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "urlencoded",
+                            "urlencoded": [
+                                {
+                                    "key": "user_id",
+                                    "value": "{{user_id}}",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "student_id",
+                                    "value": "{{student_id}}",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "school_id",
+                                    "value": "{{school_id}}",
+                                    "type": "text"
+                                }
+                            ]
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/customapi/common/attendence",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "customapi",
+                                "common",
+                                "attendence"
+                            ]
+                        },
+                        "description": "Returns data only for {{school_id}} once models are scoped."
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "4. Logout",
+            "item": [
+                {
+                    "name": "Logout (api)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Client-Service",
+                                "value": "smartschool"
+                            },
+                            {
+                                "key": "Auth-Key",
+                                "value": "schoolAdmin@"
+                            },
+                            {
+                                "key": "User-ID",
+                                "value": "{{user_id}}"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "{{access_token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"deviceToken\": \"postman-device\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/auth/logout",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "logout"
+                            ]
+                        },
+                        "description": "Deletes the token row."
+                    },
+                    "response": []
+                }
+            ]
+        }
+    ]
+}

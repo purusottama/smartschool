@@ -68,6 +68,7 @@ class Student_model extends MY_Model
         $this->db->where('student_session.session_id', $this->current_session);
         $this->db->where('students.is_active', 'yes');
         $this->db->where('users.role', 'student');
+        $this->tenantScope('students'); // Multi-School: WHERE students.school_id = <current> (no-op in All mode)
         $this->db->order_by('students.id');
         $query = $this->db->get();
         return $query->result_array();
@@ -85,6 +86,7 @@ class Student_model extends MY_Model
         $this->db->where('students.is_active', 'yes');
         $this->db->where('students.app_key !=', "");
         $this->db->where('users.role', 'student');
+        $this->tenantScope('students'); // Multi-School tenant filter
         $this->db->order_by('students.id');
         $query = $this->db->get();
         return $query->result();
@@ -114,7 +116,7 @@ class Student_model extends MY_Model
 
     public function getParentChilds($parent_id)
     {
-        $sql   = "SELECT students.*,student_session.id as `student_session_id`,student_session.session_id,student_session.student_id,student_session.class_id,student_session.default_login,student_session.section_id,classes.class,sections.section From students inner JOIN student_session on student_session.student_id=students.id inner join classes on student_session.class_id=classes.id INNER JOIN sections on sections.id=student_session.section_id WHERE students.parent_id=" . $this->db->escape($parent_id) . " and student_session.session_id=" . $this->current_session . " and students.is_active = 'yes' order by student_session.default_login desc,student_session.class_id asc";
+        $sql   = "SELECT students.*,student_session.id as `student_session_id`,student_session.session_id,student_session.student_id,student_session.class_id,student_session.default_login,student_session.section_id,classes.class,sections.section From students inner JOIN student_session on student_session.student_id=students.id inner join classes on student_session.class_id=classes.id INNER JOIN sections on sections.id=student_session.section_id WHERE students.parent_id=" . $this->db->escape($parent_id) . " and student_session.session_id=" . $this->current_session . " and students.is_active = 'yes' " . $this->tenantWhereSql('students') . " order by student_session.default_login desc,student_session.class_id asc";
         $query = $this->db->query($sql);
         return $query->result();
     }
@@ -1040,6 +1042,7 @@ class Student_model extends MY_Model
                         $this->setting_model->add($data_setting);
                     }
                 }
+                $data      = $this->tenantStamp($data); // Multi-School: set students.school_id on insert
                 $this->db->insert('students', $data);
                 $insert_id = $this->db->insert_id();
                 $message   = INSERT_RECORD_CONSTANT . " On students id " . $insert_id;

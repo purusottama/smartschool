@@ -69,6 +69,7 @@ class Staff_model extends MY_Model
         $this->db->select('staff.id');
         $this->db->from("staff");
         $this->db->where("staff.is_active", 1);
+        $this->tenantScope('staff'); // Multi-School: count only this school's staff
         $query = $this->db->get();
         $q = $query->result_array();
         return count($q);
@@ -799,6 +800,7 @@ class Staff_model extends MY_Model
         $this->db->join("roles", "staff_roles.role_id = roles.id", "left");
         $this->db->where("staff_roles.role_id", $id);
         $this->db->where("staff.is_active", "1");
+        $this->tenantScope('staff'); // Multi-School: list only this school's staff
         $this->db->from('staff');
         $query = $this->db->get();
         return $query->result_array();

@@ -1,0 +1,48 @@
+# ====================================================================
+# Custom Deploy Folder
+# ====================================================================
+deploy/
+
+# ====================================================================
+# CodeIgniter Core & Application Ignores
+# ====================================================================
+# Logs and Caches
+/vendor/
+*/logs/log-*.php
+*/logs/!index.html
+*/cache/*
+*/cache/!index.html
+!*/cache/.htaccess
+
+# Environment-specific configuration folders (Optional but recommended)
+# This keeps local/dev DB passwords from leaking into production Git repos
+*/config/development/
+*/config/testing/
+
+# SQLite databases (if used locally)
+*.db
+*.sqlite
+
+# User Guide (If downloaded with CodeIgniter)
+user_guide_src/build/
+user_guide_src/cilexer/build/
+user_guide_src/cilexer/dist/
+
+# ====================================================================
+# System & IDE Files
+# ====================================================================
+# Operating System files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# IDEs and Editors
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+*.MD
