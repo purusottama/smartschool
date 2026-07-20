@@ -59,29 +59,53 @@ class Subjectgroup extends MY_Controller
             $sections = $this->input->post('sections');
 
             $this->subjectgroup_model->add($class_array, $subject, $sections);
-            $this->session->set_flashdata('msg', '<div class="alert alert-success text-left">' . $this->lang->line('success_message') . '</div>');
-            redirect('admin/subjectgroup');
+
+            return $this->output->set_output(json_encode([
+                'status' => true,
+                'success_message' => 'Subject group added successfully.',
+                'data' => $class_array,
+            ]));
         }
         $subject_list             = $this->subject_model->get();
         $data['subjectlist']      = $subject_list;
         $subjectgroupList         = $this->subjectgroup_model->getByID();
         $data['subjectgroupList'] = $subjectgroupList;
-        $this->load->view('layout/header', $data);
-        $this->load->view('admin/subjectgroup/subjectgroupList', $data);
-        $this->load->view('layout/footer', $data);
+
+        return $this->output->set_output(json_encode([
+            'status' => true,
+            'success_message' => 'Subject group list loaded successfully.',
+            'data' => $data,
+        ]));
     }
 
-    public function delete($id)
+    public function delete($id = null)
     {
         if (!$this->rbac->hasPrivilege('subject_group', 'can_delete')) {
             access_denied();
         }
+
+        if (empty($id)) {
+            $id = $this->input->post('id', true);
+        }
+
+        if (empty($id)) {
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => 'Record id is required.',
+            ]));
+        }
+
         $data['title'] = 'Fees Master List';
         $this->subjectgroup_model->remove($id);
-        redirect('admin/subjectgroup');
+
+        return $this->output->set_output(json_encode([
+            'status' => true,
+            'success_message' => 'Subject group deleted successfully.',
+            'data' => $data,
+        ]));
     }
 
-    public function edit($id)
+    public function edit($id = null)
     {
         if (!$this->rbac->hasPrivilege('subject_group', 'can_edit')) {
             access_denied();
@@ -89,6 +113,18 @@ class Subjectgroup extends MY_Controller
 
         $this->session->set_userdata('top_menu', 'Academics');
         $this->session->set_userdata('sub_menu', 'subjectgroup/index');
+
+        if (empty($id)) {
+            $id = $this->input->post('id', true);
+        }
+
+        if (empty($id)) {
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => 'Record id is required.',
+            ]));
+        }
+
         $json_array        = array();
         $old_sections      = array();
         $old_subjects      = array();
@@ -143,13 +179,22 @@ class Subjectgroup extends MY_Controller
         $this->form_validation->set_rules('subject[]', $this->lang->line('subject'), 'trim|required|xss_clean');
 
         if ($this->form_validation->run() == false) {
-            if ($this->input->server('REQUEST_METHOD') == "POST") {
+            if ($this->input->post('sections') !== null) {
                 $data['section_array'] = $this->input->post('sections');
             }
 
-            $this->load->view('layout/header', $data);
-            $this->load->view('admin/subjectgroup/subjectgroupEdit', $data);
-            $this->load->view('layout/footer', $data);
+            if ($this->input->post('name') !== null || $this->input->post('sections') !== null || $this->input->post('subject') !== null) {
+                return $this->output->set_output(json_encode([
+                    'status' => false,
+                    'error_message' => strip_tags(validation_errors()),
+                ]));
+            }
+
+            return $this->output->set_output(json_encode([
+                'status' => true,
+                'success_message' => 'Subject group detail loaded successfully.',
+                'data' => $data,
+            ]));
         } else {
 
             $class_array = array(
@@ -164,7 +209,12 @@ class Subjectgroup extends MY_Controller
             $delete_subjects = array_diff($old_subjects, $subject);
             $add_subjects    = array_diff($subject, $old_subjects);
             $this->subjectgroup_model->edit($class_array, $delete_sections, $add_sections, $delete_subjects, $add_subjects);
-            redirect('admin/subjectgroup');
+
+            return $this->output->set_output(json_encode([
+                'status' => true,
+                'success_message' => 'Subject group updated successfully.',
+                'data' => $class_array,
+            ]));
         }
     }
 

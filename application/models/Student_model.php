@@ -1107,6 +1107,7 @@ class Student_model extends MY_Model
             $record_id = $rec['id'];
             $this->log($message, $record_id, $action);
         } else {
+            $data = $this->tenantStamp($data); // Multi-School: stamp student_session.school_id
             $this->db->insert('student_session', $data);
             $id        = $this->db->insert_id();
             $message   = INSERT_RECORD_CONSTANT . " On  student session id " . $id;

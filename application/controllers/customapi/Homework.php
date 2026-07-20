@@ -41,9 +41,11 @@ class Homework extends My_Controller
         $data['subject_group_id'] = "";
         $data['subject_id']       = "";
 
-        $this->load->view("layout/header", $data);
-        $this->load->view("homework/homeworklist", $data);
-        $this->load->view("layout/footer", $data);
+        return $this->output->set_output(json_encode([
+            'status'          => true,
+            'success_message' => 'Homework list.',
+            'data'            => $data,
+        ]));
     }
 
     public function searchvalidation()
@@ -539,10 +541,19 @@ class Homework extends My_Controller
         echo json_encode($array);
     }
 
-    public function delete($id)
+    public function delete($id = null)
     {
         if (!$this->rbac->hasPrivilege('homework', 'can_delete')) {
             access_denied();
+        }
+        if (empty($id)) {
+            $id = $this->input->post('id', true);
+        }
+        if (empty($id)) {
+            return $this->output->set_output(json_encode([
+                'status'        => false,
+                'error_message' => 'Record id is required.',
+            ]));
         }
         if (!empty($id)) {
             $row = $this->homework_model->get($id);
@@ -551,7 +562,11 @@ class Homework extends My_Controller
             }
 
             $this->homework_model->delete($id);
-            redirect("homework");
+            return $this->output->set_output(json_encode([
+                'status'          => true,
+                'success_message' => 'Homework deleted successfully.',
+                'data'            => array('id' => $id),
+            ]));
         }
     }
 
@@ -561,10 +576,20 @@ class Homework extends My_Controller
         $this->media_storage->filedownload($homework['document'], "./uploads/homework");
     }
 
-    public function evaluation($id)
+    public function evaluation($id = null)
     {
         if (!$this->rbac->hasPrivilege('homework_evaluation', 'can_view')) {
             access_denied();
+        }
+
+        if (empty($id)) {
+            $id = $this->input->post('id', true);
+        }
+        if (empty($id)) {
+            return $this->output->set_output(json_encode([
+                'status'        => false,
+                'error_message' => 'Record id is required.',
+            ]));
         }
 
         $getStaffRole       = $this->customlib->getStaffRole();
@@ -630,7 +655,11 @@ class Homework extends My_Controller
             $data["evaluated_by"] = $evaluated_by;
         }
 
-        $this->load->view("homework/evaluation_modal", $data);
+        return $this->output->set_output(json_encode([
+            'status'          => true,
+            'success_message' => 'Homework evaluation details.',
+            'data'            => $data,
+        ]));
     }
 
     public function add_evaluation()
@@ -768,13 +797,24 @@ class Homework extends My_Controller
             }
         }
 
-        $this->load->view("layout/header");
-        $this->load->view("homework/homework_evaluation", $data);
-        $this->load->view("layout/footer");
+        return $this->output->set_output(json_encode([
+            'status'          => true,
+            'success_message' => 'Homework evaluation report.',
+            'data'            => $data,
+        ]));
     }
 
     public function getreport($id = 1)
     {
+        if (empty($id)) {
+            $id = $this->input->post('id', true);
+        }
+        if (empty($id)) {
+            return $this->output->set_output(json_encode([
+                'status'        => false,
+                'error_message' => 'Record id is required.',
+            ]));
+        }
         $result = $this->homework_model->getEvaluationReport($id);
         if (!empty($result)) {
             $data["result"]       = $result;
@@ -788,9 +828,16 @@ class Homework extends My_Controller
             $data["evaluated_by"] = $evaluated_by;
             $studentlist          = $this->homework_model->getStudents($class_id, $section_id);
             $data["studentlist"]  = $studentlist;
-            $this->load->view("homework/evaluation_report", $data);
+            return $this->output->set_output(json_encode([
+                'status'          => true,
+                'success_message' => 'Homework evaluation report.',
+                'data'            => $data,
+            ]));
         } else {
-            echo "<div class='row'><div class='col-md-12'><br/><div class='alert alert-info'>" . $this->lang->line('no_record_found') . "</div></div></div>";
+            return $this->output->set_output(json_encode([
+                'status'        => false,
+                'error_message' => 'No record found.',
+            ]));
         }
     }
 
@@ -858,9 +905,11 @@ class Homework extends My_Controller
         $class             = $this->class_model->get();
         $data['classlist'] = $class;
         $data['class_id']  = "";
-        $this->load->view("layout/header");
-        $this->load->view("homework/dailyassignmentlist", $data);
-        $this->load->view("layout/footer");
+        return $this->output->set_output(json_encode([
+            'status'          => true,
+            'success_message' => 'Daily assignment list.',
+            'data'            => $data,
+        ]));
     }
 
     public function searchdailyassignment()
@@ -1057,9 +1106,11 @@ class Homework extends My_Controller
             $data["resultlist"] = $homeworklist;
         }
 
-        $this->load->view("layout/header", $data);
-        $this->load->view("homework/homeworkreport", $data);
-        $this->load->view("layout/footer", $data);
+        return $this->output->set_output(json_encode([
+            'status'          => true,
+            'success_message' => 'Homework report.',
+            'data'            => $data,
+        ]));
     }
 
     public function getStudentByClassSection()
@@ -1091,9 +1142,11 @@ class Homework extends My_Controller
         $this->session->set_userdata('top_menu', 'report');
         $this->session->set_userdata('sub_menu', 'Homework/homeworkordailyassignmentreport');
         $this->session->set_userdata('subsub_menu', '');
-        $this->load->view('layout/header');
-        $this->load->view('homework/homeworkordailyassignmentreport');
-        $this->load->view('layout/footer');
+        return $this->output->set_output(json_encode([
+            'status'          => true,
+            'success_message' => 'Homework or daily assignment report.',
+            'data'            => array(),
+        ]));
     }
 
     public function dailyassignmentreport()
@@ -1109,9 +1162,11 @@ class Homework extends My_Controller
         $data['searchlist'] = $this->search_type;
         $class              = $this->class_model->get();
         $data['classlist']  = $class;
-        $this->load->view("layout/header");
-        $this->load->view("homework/dailyassignmentreport", $data);
-        $this->load->view("layout/footer");
+        return $this->output->set_output(json_encode([
+            'status'          => true,
+            'success_message' => 'Daily assignment report.',
+            'data'            => $data,
+        ]));
     }
 
     public function searchdailyassignmentreport()

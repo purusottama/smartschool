@@ -54,20 +54,42 @@ class Feetype extends MY_Controller
         // $this->load->view('layout/footer', $data);
     }
 
-    public function delete($id)
+    public function delete($id = null)
     {
         if (!$this->rbac->hasPrivilege('fees_type', 'can_delete')) {
             access_denied();
         }
+        if (empty($id)) {
+            $id = $this->input->post('id', true);
+        }
+        if (empty($id)) {
+            return $this->output->set_output(json_encode([
+                'status'        => false,
+                'error_message' => 'Record id is required.',
+            ]));
+        }
 
         $this->feetype_model->remove($id);
-        redirect('admin/feetype/index');
+        return $this->output->set_output(json_encode([
+            'status'          => true,
+            'success_message' => 'Fee type deleted successfully.',
+            'data'            => array('id' => $id),
+        ]));
     }
 
-    public function edit($id)
+    public function edit($id = null)
     {
         if (!$this->rbac->hasPrivilege('fees_type', 'can_edit')) {
             access_denied();
+        }
+        if (empty($id)) {
+            $id = $this->input->post('id', true);
+        }
+        if (empty($id)) {
+            return $this->output->set_output(json_encode([
+                'status'        => false,
+                'error_message' => 'Record id is required.',
+            ]));
         }
         $this->session->set_userdata('top_menu', 'Fees Collection');
         $this->session->set_userdata('sub_menu', 'feetype/index');
@@ -84,9 +106,10 @@ class Feetype extends MY_Controller
         );
         $this->form_validation->set_rules('code', $this->lang->line('fees_code'), 'required');
         if ($this->form_validation->run() == false) {
-            $this->load->view('layout/header', $data);
-            $this->load->view('admin/feetype/feetypeEdit', $data);
-            $this->load->view('layout/footer', $data);
+            return $this->output->set_output(json_encode([
+                'status'        => false,
+                'error_message' => strip_tags(validation_errors()),
+            ]));
         } else {
             $data = array(
                 'id'          => $id,
@@ -95,8 +118,11 @@ class Feetype extends MY_Controller
                 'description' => $this->input->post('description'),
             );
             $this->feetype_model->add($data);
-            $this->session->set_flashdata('msg', '<div class="alert alert-success text-left">' . $this->lang->line('update_message') . '</div>');
-            redirect('admin/feetype/index');
+            return $this->output->set_output(json_encode([
+                'status'          => true,
+                'success_message' => 'Fee type updated successfully.',
+                'data'            => $data,
+            ]));
         }
     }
 

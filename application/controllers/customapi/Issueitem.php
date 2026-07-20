@@ -22,9 +22,11 @@ class Issueitem extends My_Controller
         $this->session->set_userdata('sub_menu', 'issueitem/index');
         $data['title']      = 'Add Issue item';
         $data['title_list'] = 'Recent Issue items';
-        $this->load->view('layout/header', $data);
-        $this->load->view('admin/issueitem/issueitemList', $data);
-        $this->load->view('layout/footer', $data);
+        return $this->output->set_output(json_encode([
+            'status' => true,
+            'success_message' => 'Issue item list loaded successfully.',
+            'data' => $data,
+        ]));
     }
 
     public function create()
@@ -38,9 +40,11 @@ class Issueitem extends My_Controller
         $itemcategory        = $this->itemcategory_model->get();
         $data['itemcatlist'] = $itemcategory;
         $data['staff']       = $this->staff_model->inventry_staff();
-        $this->load->view('layout/header', $data);
-        $this->load->view('admin/issueitem/issueitemCreate', $data);
-        $this->load->view('layout/footer', $data);
+        return $this->output->set_output(json_encode([
+            'status' => true,
+            'success_message' => 'Issue item create options loaded successfully.',
+            'data' => $data,
+        ]));
     }
 
     public function add()
@@ -108,11 +112,24 @@ class Issueitem extends My_Controller
         return true;
     }
 
-    public function delete($id)
+    public function delete($id = null)
     {
+        if (empty($id)) {
+            $id = $this->input->post('id', true);
+        }
+        if (empty($id)) {
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => 'Record id is required.',
+            ]));
+        }
         $data['title'] = 'Delete';
         $this->itemissue_model->remove($id);
-        redirect('admin/issueitem');
+        return $this->output->set_output(json_encode([
+            'status' => true,
+            'success_message' => 'Issued item deleted successfully.',
+            'data' => $data,
+        ]));
     }
 
     public function getUser()

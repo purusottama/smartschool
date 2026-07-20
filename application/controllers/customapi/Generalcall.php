@@ -61,21 +61,30 @@ class Generalcall extends MY_Controller
             */
     }
 
-    public function edit($id)
+    public function edit($id = null)
     {
         if (!$this->rbac->hasPrivilege('phone_call_log', 'can_edit')) {
             access_denied();
+        }
+
+        if (empty($id)) {
+            $id = $this->input->post('id', true);
+        }
+        if (empty($id)) {
+            return $this->output->set_output(json_encode([
+                'status'        => false,
+                'error_message' => 'Record id is required.',
+            ]));
         }
 
         $this->form_validation->set_rules('call_type', $this->lang->line('call_type'), 'required');
         $this->form_validation->set_rules('contact', $this->lang->line('contact'), 'required');
         $this->form_validation->set_rules('date', $this->lang->line('date'), 'required');
         if ($this->form_validation->run() == false) {
-            $data['CallList']  = $this->general_call_model->call_list();
-            $data['Call_data'] = $this->general_call_model->call_list($id);
-            $this->load->view('layout/header');
-            $this->load->view('admin/frontoffice/generalcalleditview', $data);
-            $this->load->view('layout/footer');
+            return $this->output->set_output(json_encode([
+                'status'        => false,
+                'error_message' => strip_tags(validation_errors()),
+            ]));
         } else {
             if($this->input->post('follow_up_date')){
                 $follow_up_date =   date('Y-m-d', $this->customlib->datetostrtotime($this->input->post('follow_up_date')));
@@ -95,29 +104,58 @@ class Generalcall extends MY_Controller
             );
 
             $this->general_call_model->call_update($id, $calls_update);
-            $this->session->set_flashdata('msg', '<div class="alert alert-success">' . $this->lang->line('success_message') . '</div>');
-            redirect('admin/generalcall');
+            return $this->output->set_output(json_encode([
+                'status'          => true,
+                'success_message' => 'Phone call log updated successfully.',
+                'data'            => $calls_update,
+            ]));
         }
     }
 
-    public function details($id)
+    public function details($id = null)
     {
         if (!$this->rbac->hasPrivilege('phone_call_log', 'can_view')) {
             access_denied();
         }
 
+        if (empty($id)) {
+            $id = $this->input->post('id', true);
+        }
+        if (empty($id)) {
+            return $this->output->set_output(json_encode([
+                'status'        => false,
+                'error_message' => 'Record id is required.',
+            ]));
+        }
+
         $data['Call_data'] = $this->general_call_model->call_list($id);
-        $this->load->view('admin/frontoffice/Generalmodelview', $data);
+        return $this->output->set_output(json_encode([
+            'status'          => true,
+            'success_message' => 'Phone call log details.',
+            'data'            => $data,
+        ]));
     }
 
-    public function delete($id)
+    public function delete($id = null)
     {
         if (!$this->rbac->hasPrivilege('phone_call_log', 'can_delete')) {
             access_denied();
         }
+        if (empty($id)) {
+            $id = $this->input->post('id', true);
+        }
+        if (empty($id)) {
+            return $this->output->set_output(json_encode([
+                'status'        => false,
+                'error_message' => 'Record id is required.',
+            ]));
+        }
         $this->general_call_model->delete($id);
-        $this->session->set_flashdata('msg', '<div class="alert alert-success">' . $this->lang->line('delete_message') . '</div>');
-        redirect('admin/generalcall');
+        return $this->output->set_output(json_encode([
+            'status'          => true,
+            'success_message' => 'Phone call log deleted successfully.',
+            'data'            => array('id' => $id),
+        ]));
     }
 
     public function check_default($post_string)
@@ -171,13 +209,12 @@ class Generalcall extends MY_Controller
             }
         }
 
-        // $json_data = array(
-        //     "draw"            => intval($m->draw),
-        //     "recordsTotal"    => intval($m->recordsTotal),
-        //     "recordsFiltered" => intval($m->recordsFiltered),
-        //     "data"            => $dt_data,
-        // );
-       // echo json_encode($json_data);
+        $json_data = array(
+            "draw"            => intval($m->draw),
+            "recordsTotal"    => intval($m->recordsTotal),
+            "recordsFiltered" => intval($m->recordsFiltered),
+            "data"            => $dt_data,
+        );
 
          return $this->output->set_output(json_encode([
                         'status' => true,

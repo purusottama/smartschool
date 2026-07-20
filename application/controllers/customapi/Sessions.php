@@ -37,27 +37,50 @@ class Sessions extends My_Controller
         // $this->load->view('layout/footer', $data);
     }
 
-    public function view($id)
+    public function view($id = null)
     {
+        if (empty($id)) {
+            $id = $this->input->post('id', true);
+        }
+        if (empty($id)) {
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => 'Record id is required.',
+            ]));
+        }
         if (!$this->rbac->hasPrivilege('session_setting', 'can_view')) {
             access_denied();
         }
         $data['title']   = 'Session List';
         $session         = $this->session_model->get($id);
         $data['session'] = $session;
-        $this->load->view('layout/header', $data);
-        $this->load->view('session/sessionShow', $data);
-        $this->load->view('layout/footer', $data);
+        return $this->output->set_output(json_encode([
+            'status' => true,
+            'success_message' => 'Session details.',
+            'data' => $data,
+        ]));
     }
 
-    public function delete($id)
+    public function delete($id = null)
     {
+        if (empty($id)) {
+            $id = $this->input->post('id', true);
+        }
+        if (empty($id)) {
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => 'Record id is required.',
+            ]));
+        }
         if (!$this->rbac->hasPrivilege('session_setting', 'can_delete')) {
             access_denied();
         }
-        $this->session->set_flashdata('list_msg', '<div class="alert alert-success text-left">' . $this->lang->line('delete_message') . '</div>');
         $this->session_model->remove($id);
-        redirect('sessions/index');
+        return $this->output->set_output(json_encode([
+            'status' => true,
+            'success_message' => 'Session deleted successfully.',
+            'data' => array('id' => $id),
+        ]));
     }
 
     public function create()
@@ -70,21 +93,34 @@ class Sessions extends My_Controller
         $data['title']       = 'Add Session';
         $this->form_validation->set_rules('session', $this->lang->line('session'), 'trim|required|xss_clean');
         if ($this->form_validation->run() == false) {
-            $this->load->view('layout/header', $data);
-            $this->load->view('session/sessionList', $data);
-            $this->load->view('layout/footer', $data);
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => strip_tags(validation_errors()),
+            ]));
         } else {
             $data = array(
                 'session' => $this->input->post('session'),
             );
             $this->session_model->add($data);
-            $this->session->set_flashdata('msg', '<div class="alert alert-success text-left">' . $this->lang->line('success_message') . '</div>');
-            redirect('sessions/index');
+            return $this->output->set_output(json_encode([
+                'status' => true,
+                'success_message' => 'Session added successfully.',
+                'data' => $data,
+            ]));
         }
     }
 
-    public function edit($id)
+    public function edit($id = null)
     {
+        if (empty($id)) {
+            $id = $this->input->post('id', true);
+        }
+        if (empty($id)) {
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => 'Record id is required.',
+            ]));
+        }
         if (!$this->rbac->hasPrivilege('session_setting', 'can_edit')) {
             access_denied();
         }
@@ -96,17 +132,21 @@ class Sessions extends My_Controller
         $data['session']     = $session;
         $this->form_validation->set_rules('session', $this->lang->line('session'), 'trim|required|xss_clean');
         if ($this->form_validation->run() == false) {
-            $this->load->view('layout/header', $data);
-            $this->load->view('session/sessionEdit', $data);
-            $this->load->view('layout/footer', $data);
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => strip_tags(validation_errors()),
+            ]));
         } else {
             $data = array(
                 'id'      => $id,
                 'session' => $this->input->post('session'),
             );
             $this->session_model->add($data);
-            $this->session->set_flashdata('msg', '<div class="alert alert-success text-left">' . $this->lang->line('update_message') . '</div>');
-            redirect('sessions/index');
+            return $this->output->set_output(json_encode([
+                'status' => true,
+                'success_message' => 'Session updated successfully.',
+                'data' => $data,
+            ]));
         }
     }
 

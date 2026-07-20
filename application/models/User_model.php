@@ -26,6 +26,7 @@ class User_model extends MY_Model
            $insert_id = $record_id = $data['id'];
             $this->log($message, $record_id, $action);
         } else {
+            $data = $this->tenantStamp($data); // Multi-School: stamp users.school_id on create
             $this->db->insert('users', $data);
             $insert_id = $this->db->insert_id();
             $message   = INSERT_RECORD_CONSTANT . " On users id " . $insert_id;

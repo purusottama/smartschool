@@ -130,29 +130,64 @@ class Feemaster extends My_Controller
         return $this->feesessiongroup_model->group_exists($fee_groups_id);
     }
 
-	 public function delete($id)
+	 public function delete($id = null)
     {
         if (!$this->rbac->hasPrivilege('fees_master', 'can_delete')) {
             access_denied();
         }
+        if (empty($id)) {
+            $id = $this->input->post('id', true);
+        }
+        if (empty($id)) {
+            return $this->output->set_output(json_encode([
+                'status'        => false,
+                'error_message' => 'Record id is required.',
+            ]));
+        }
         $data['title'] = $this->lang->line('fees_master_list');
         $this->feegrouptype_model->remove($id);
         $this->feegrouptype_model->remove_comulative_by_fee_groups_feetype_id($id);
-        redirect('admin/feemaster/index');
+        return $this->output->set_output(json_encode([
+            'status'          => true,
+            'success_message' => 'Fees master record deleted successfully.',
+            'data'            => array('id' => $id),
+        ]));
     }
 
-    public function deletegrp($id)
+    public function deletegrp($id = null)
     {
+        if (empty($id)) {
+            $id = $this->input->post('id', true);
+        }
+        if (empty($id)) {
+            return $this->output->set_output(json_encode([
+                'status'        => false,
+                'error_message' => 'Record id is required.',
+            ]));
+        }
         $data['title'] = $this->lang->line('fees_master_list');
         $this->feesessiongroup_model->remove($id);
         $this->feesessiongroup_model->remove_comulative_by_fee_groups_id($id);
-        redirect('admin/feemaster');
+        return $this->output->set_output(json_encode([
+            'status'          => true,
+            'success_message' => 'Fee session group deleted successfully.',
+            'data'            => array('id' => $id),
+        ]));
     }	
 	
-	public function edit($id)
+	public function edit($id = null)
     {
         if (!$this->rbac->hasPrivilege('fees_master', 'can_edit')) {
             access_denied();
+        }
+        if (empty($id)) {
+            $id = $this->input->post('id', true);
+        }
+        if (empty($id)) {
+            return $this->output->set_output(json_encode([
+                'status'        => false,
+                'error_message' => 'Record id is required.',
+            ]));
         }
         $this->session->set_userdata('top_menu', 'Fees Collection');
         $this->session->set_userdata('sub_menu', 'admin/feemaster');
@@ -167,10 +202,12 @@ class Feemaster extends My_Controller
         $data['feetypeList']        =   $feetype;
         $feegroup_result            =   $this->feesessiongroup_model->getFeesByGroup(null,0);
         $data['feemasterList']      =   $feegroup_result;
-      
-        $this->load->view('layout/header', $data);
-        $this->load->view('admin/feemaster/feemasterEdit', $data);
-        $this->load->view('layout/footer', $data);       
+
+        return $this->output->set_output(json_encode([
+            'status'          => true,
+            'success_message' => 'Fees master record details.',
+            'data'            => $data,
+        ]));
     }
 
     public function edit_data(){
@@ -270,10 +307,19 @@ class Feemaster extends My_Controller
         echo json_encode(array('status' => 1, 'msg' => $this->lang->line('success_message'), 'error' => ''));
     }
 
-    public function assign($id)
+    public function assign($id = null)
     {
         if (!$this->rbac->hasPrivilege('fees_group_assign', 'can_view')) {
             access_denied();
+        }
+        if (empty($id)) {
+            $id = $this->input->post('id', true);
+        }
+        if (empty($id)) {
+            return $this->output->set_output(json_encode([
+                'status'        => false,
+                'error_message' => 'Record id is required.',
+            ]));
         }
         $this->session->set_userdata('top_menu', 'Fees Collection');
         $this->session->set_userdata('sub_menu', 'admin/feemaster');
@@ -305,9 +351,11 @@ class Feemaster extends My_Controller
             $data['resultlist'] = $resultlist;
         }
 
-        $this->load->view('layout/header', $data);
-        $this->load->view('admin/feemaster/assign', $data);
-        $this->load->view('layout/footer', $data);
-    }    
+        return $this->output->set_output(json_encode([
+            'status'          => true,
+            'success_message' => 'Fee group assign list.',
+            'data'            => $data,
+        ]));
+    }
 
 }

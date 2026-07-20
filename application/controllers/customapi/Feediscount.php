@@ -14,10 +14,26 @@ class Feediscount extends My_Controller
         $this->load->model('feediscount_model');
     }
 
-    public function delete($id)
+    public function delete($id = null)
     {
+        if (empty($id)) {
+            $id = $this->input->post('id', true);
+        }
+
+        if (empty($id)) {
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => 'Record id is required.',
+            ]));
+        }
+
         $this->feediscount_model->remove($id);
-        redirect('admin/feediscount/index');
+
+        return $this->output->set_output(json_encode([
+            'status' => true,
+            'success_message' => 'Fee discount deleted successfully.',
+            'data' => array('id' => $id),
+        ]));
     }
 
     public function index()
@@ -89,13 +105,23 @@ class Feediscount extends My_Controller
         }
     }
 
-    public function edit($id)
+    public function edit($id = null)
     {
         if (!$this->rbac->hasPrivilege('fees_discount', 'can_edit')) {
             access_denied();
         }
-        $this->session->set_userdata('top_menu', 'Fees Collection');
-        $this->session->set_userdata('sub_menu', 'admin/feediscount');
+
+        if (empty($id)) {
+            $id = $this->input->post('id', true);
+        }
+
+        if (empty($id)) {
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => 'Record id is required.',
+            ]));
+        }
+
         $feesdiscount_result     = $this->feediscount_model->get();
         $data['feediscountList'] = $feesdiscount_result;    
         $data['id'] = $id;
@@ -112,10 +138,11 @@ class Feediscount extends My_Controller
         }
 
         if ($this->form_validation->run() == false) {
-            $this->load->view('layout/header', $data);
-            $this->load->view('admin/feediscount/feediscountEdit', $data);
-            $this->load->view('layout/footer', $data);
-        } else {           
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => strip_tags(validation_errors()),
+            ]));
+        } else {
            
             if ($this->input->post('account_type') == "percentage") {
                 $amount =  '0.00' ;
@@ -136,18 +163,32 @@ class Feediscount extends My_Controller
             );
 
             $this->feediscount_model->add($data);
-            $this->session->set_flashdata('msg', '<div class="alert alert-success">' . $this->lang->line('update_message') . '</div>');
-            redirect('admin/feediscount/index');
+
+            return $this->output->set_output(json_encode([
+                'status' => true,
+                'success_message' => 'Fee discount updated successfully.',
+                'data' => $data,
+            ]));
         }
     }
 
-    public function assign($id)
+    public function assign($id = null)
     {
         if (!$this->rbac->hasPrivilege('fees_discount_assign', 'can_view')) {
             access_denied();
         }
-        $this->session->set_userdata('top_menu', 'Fees Collection');
-        $this->session->set_userdata('sub_menu', 'admin/feediscount');
+
+        if (empty($id)) {
+            $id = $this->input->post('id', true);
+        }
+
+        if (empty($id)) {
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => 'Record id is required.',
+            ]));
+        }
+
         $data['id'] = $id;
 
         $class                   = $this->class_model->get();
@@ -172,9 +213,12 @@ class Feediscount extends My_Controller
             $data['resultlist']  = $resultlist;
         }
         $data['sch_setting'] = $this->sch_setting_detail;
-        $this->load->view('layout/header', $data);
-        $this->load->view('admin/feediscount/assign', $data);
-        $this->load->view('layout/footer', $data);
+
+        return $this->output->set_output(json_encode([
+            'status' => true,
+            'success_message' => 'Fee discount assignment data fetched successfully.',
+            'data' => $data,
+        ]));
     }
 
     public function studentdiscount()

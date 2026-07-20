@@ -314,9 +314,17 @@ public $sch_setting_detail = array();
                     ]));
     }
 
-    public function getfeeDetails($id)
+    public function getfeeDetails($id = null)
     {
-        
+        if (empty($id)) {
+            $id = $this->input->post('id', true);
+        }
+        if (empty($id)) {
+            return $this->output->set_output(json_encode([
+                        'status' => false,
+                        'error_message' => 'Record id is required.',
+            ]));
+        }
 
        // $data['sch_setting']   = $this->sch_setting_detail;
         $data['title']         = 'Student Detail';
@@ -1210,8 +1218,6 @@ Powered by EduFeez";
                                 'data' => []
                             ]));
 
-						$this->session->set_flashdata('msg', '<div class="alert alert-success">' . $this->lang->line('success_message') . '</div>');
-						redirect('student/create');
 					} else {
 		
 						$data['error_message'] = $this->lang->line('admission_no') . ' ' . $admission_no . ' ' . $this->lang->line('already_exists');

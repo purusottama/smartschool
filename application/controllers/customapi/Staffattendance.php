@@ -43,9 +43,11 @@ class Staffattendance extends MY_Controller
         $data['staff_settings']   = $staff_settings;   
 
         if (!(isset($user_type_id))) {
-            $this->load->view('layout/header', $data);
-            $this->load->view('admin/staffattendance/staffattendancelist', $data);
-            $this->load->view('layout/footer', $data);
+            return $this->output->set_output(json_encode([
+                'status' => true,
+                'success_message' => 'Staff attendance list.',
+                'data' => $data,
+            ]));
         } else {
             $user_type            = $this->input->post('user_id');
             $date                 = $this->input->post('date');
@@ -58,8 +60,7 @@ class Staffattendance extends MY_Controller
             $is_first_time_attendance      = true;
             $search               = $this->input->post('search');
             $holiday              = $this->input->post('holiday');
-            $this->session->set_flashdata('msg', '');
-            
+
 
             $attendencetypes             = $this->attendencetype_model->getStaffAttendanceType();
             $data['attendencetypeslist'] = $attendencetypes;        
@@ -68,11 +69,13 @@ class Staffattendance extends MY_Controller
             $data['is_first_time_attendance']  = $is_first_time_attendance;
             $data['resultlist']  = $resultlist;
 
-            $this->load->view('layout/header', $data);
-            $this->load->view('admin/staffattendance/staffattendancelist', $data);
-            $this->load->view('layout/footer', $data);
+            return $this->output->set_output(json_encode([
+                'status' => true,
+                'success_message' => 'Staff attendance list.',
+                'data' => $data,
+            ]));
         }
-    }    
+    }
 
     public function monthAttendance($st_month, $no_of_months, $emp)
     {
@@ -116,9 +119,11 @@ class Staffattendance extends MY_Controller
         $data["resultlist"]       = $res;
         $data["attendence_array"] = $attendence_array;
         $data["date_array"]       = $date_array;
-        $this->load->view("layout/header");
-        $this->load->view("admin/staff/staffattendance", $data);
-        $this->load->view("layout/footer");
+        return $this->output->set_output(json_encode([
+            'status' => true,
+            'success_message' => 'Staff profile attendance.',
+            'data' => $data,
+        ]));
     }
 
 }

@@ -68,14 +68,41 @@ class Vehroute extends My_Controller
         // $this->load->view('layout/footer', $data);
     }
 
-    public function delete($id)
+    public function delete($id = null)
     {
+        if (empty($id)) {
+            $id = $this->input->post('id', true);
+        }
+
+        if (empty($id)) {
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => 'Record id is required.',
+            ]));
+        }
+
         $this->vehroute_model->removeByroute($id);
-        redirect('admin/vehroute');
+
+        return $this->output->set_output(json_encode([
+            'status' => true,
+            'success_message' => 'Vehicle route deleted successfully.',
+            'data' => array('id' => $id),
+        ]));
     }
 
-    public function edit($id)
+    public function edit($id = null)
     {
+        if (empty($id)) {
+            $id = $this->input->post('id', true);
+        }
+
+        if (empty($id)) {
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => 'Record id is required.',
+            ]));
+        }
+
         $data['title'] = 'Edit Fees Master';
         $data['id']    = $id;
         $vehroute      = $this->vehroute_model->getRouteVehiclesList($id);
@@ -98,9 +125,19 @@ class Vehroute extends My_Controller
             $data['routelist']    = $routeList;
              $vehroute_result   = $this->vehroute_model->getRouteVehiclesList();
             $data['vehroutelist'] = $vehroute_result;
-            $this->load->view('layout/header', $data);
-            $this->load->view('admin/vehroute/vehrouteEdit', $data);
-            $this->load->view('layout/footer', $data);
+
+            if ($this->input->post('route_id') !== null || $this->input->post('vehicle') !== null) {
+                return $this->output->set_output(json_encode([
+                    'status' => false,
+                    'error_message' => strip_tags(validation_errors()),
+                ]));
+            }
+
+            return $this->output->set_output(json_encode([
+                'status' => true,
+                'success_message' => 'Vehicle route detail loaded successfully.',
+                'data' => $data,
+            ]));
         } else {
 
             $vehicle        = $this->input->post('vehicle');
@@ -151,8 +188,11 @@ class Vehroute extends My_Controller
                 }
             }
 
-            $this->session->set_flashdata('msg', '<div class="alert alert-success text-left">' . $this->lang->line('update_message') . '</div>');
-            redirect('admin/vehroute/index');
+            return $this->output->set_output(json_encode([
+                'status' => true,
+                'success_message' => 'Vehicle route updated successfully.',
+                'data' => array('route_id' => $route_id, 'vehicle' => $vehicle),
+            ]));
         }
     }
 

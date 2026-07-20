@@ -78,9 +78,24 @@ class Payroll extends My_Controller
         // $this->load->view("layout/footer", $data);
     }
 
-    public function create($month, $year, $id)
-    {       
-        
+    public function create($month = null, $year = null, $id = null)
+    {
+        if (empty($month)) {
+            $month = $this->input->post('month', true);
+        }
+        if (empty($year)) {
+            $year = $this->input->post('year', true);
+        }
+        if (empty($id)) {
+            $id = $this->input->post('id', true);
+        }
+        if (empty($id)) {
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => 'Record id is required.',
+            ]));
+        }
+
         $data["staff_id"]            = "";
         $data["basic"]               = "";
         $data["name"]                = "";
@@ -128,8 +143,17 @@ class Payroll extends My_Controller
         // $this->load->view("layout/footer", $data);
     }
 
-    public function edit($id)
+    public function edit($id = null)
     {
+        if (empty($id)) {
+            $id = $this->input->post('id', true);
+        }
+        if (empty($id)) {
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => 'Record id is required.',
+            ]));
+        }
         $data["staff_id"]         = "";
         $data["basic"]            = "";
         $data["name"]             = "";
@@ -162,9 +186,11 @@ class Payroll extends My_Controller
         $data['monthLeaves']     = $this->monthLeaves($newdate, 3, $employee_payroll['staff_id']);
         $data["attendanceType"]  = $this->staffattendancemodel->getStaffAttendanceType();
         $data["alloted_leave"]   = $alloted_leave[0]["alloted_leave"];
-        $this->load->view("layout/header", $data);
-        $this->load->view("admin/payroll/edit", $data);
-        $this->load->view("layout/footer", $data);
+        return $this->output->set_output(json_encode([
+            'status' => true,
+            'success_message' => 'Payslip details.',
+            'data' => $data,
+        ]));
     }
 
     public function editpayroll()
@@ -183,9 +209,12 @@ class Payroll extends My_Controller
         $leave_deduction = $this->input->post("leave_deduction");
         $this->form_validation->set_rules('net_salary', $this->lang->line('net_salary'), 'trim|required|xss_clean');
         if ($this->form_validation->run() == false) {
-            $this->create($month, $year, $staff_id);
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => strip_tags(validation_errors()),
+            ]));
         } else {
-                
+
         if($total_allowance){
                 $total_allowance = convertCurrencyFormatToBaseAmount($total_allowance);
         }else{
@@ -330,12 +359,17 @@ class Payroll extends My_Controller
                     $insert_payslip_allowance = $this->payroll_model->update_allowance([], [], [0], $payslipid, 'negative');
                 }
 
-                redirect('admin/payroll');
+                return $this->output->set_output(json_encode([
+                    'status' => true,
+                    'success_message' => 'Payslip updated successfully.',
+                    'data' => $data,
+                ]));
             } else {
 
-                $this->session->set_flashdata("msg", "<div class='alert alert-warning'>" . $this->lang->line('payslip_not_generated') . "</div>");
-
-                redirect('admin/payroll');
+                return $this->output->set_output(json_encode([
+                    'status' => false,
+                    'error_message' => 'Payslip not generated.',
+                ]));
             }
         }
     }
@@ -429,7 +463,10 @@ class Payroll extends My_Controller
         $this->form_validation->set_rules('net_salary', $this->lang->line('net_salary'), 'trim|required|xss_clean');       
         
         if ($this->form_validation->run() == false) {
-            $this->create($month, $year, $staff_id);
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => strip_tags(validation_errors()),
+            ]));
         } else {
 
             $data = array('staff_id' => $staff_id,
@@ -503,17 +540,32 @@ class Payroll extends My_Controller
                     }
                 }
 
-                redirect('admin/payroll');
+                return $this->output->set_output(json_encode([
+                    'status' => true,
+                    'success_message' => 'Payslip generated successfully.',
+                    'data' => $data,
+                ]));
             } else {
 
-                $this->session->set_flashdata("msg", $this->lang->line('payslip_already_generated'));
-                redirect('admin/payroll');
+                return $this->output->set_output(json_encode([
+                    'status' => false,
+                    'error_message' => 'Payslip already generated.',
+                ]));
             }
         }
     }
 
-    public function search($month, $year, $role = '')
+    public function search($month = null, $year = null, $role = '')
     {
+        if (empty($month)) {
+            $month = $this->input->post('month', true);
+        }
+        if (empty($year)) {
+            $year = $this->input->post('year', true);
+        }
+        if (empty($role)) {
+            $role = $this->input->post('role', true);
+        }
         $user_type              = $this->staff_model->getStaffRole();
         $data['classlist']      = $user_type;
         $data['monthlist']      = $this->customlib->getMonthDropdown();
@@ -526,9 +578,11 @@ class Payroll extends My_Controller
         $data["payroll_status"] = $this->payroll_status;
         $data["resultlist"]     = $searchEmployee;
         $data["payment_mode"]   = $this->payment_mode;
-        $this->load->view("layout/header", $data);
-        $this->load->view("admin/payroll/stafflist", $data);
-        $this->load->view("layout/footer", $data);
+        return $this->output->set_output(json_encode([
+            'status' => true,
+            'success_message' => 'Payroll staff list.',
+            'data' => $data,
+        ]));
     }
 
     public function paymentRecord()
@@ -545,11 +599,27 @@ class Payroll extends My_Controller
         echo json_encode($data);
     }
 
-    public function paymentStatus($status)
+    public function paymentStatus($status = null)
     {
+        if (empty($status)) {
+            $status = $this->input->post('status', true);
+        }
         $id          = $this->input->get('id');
+        if (empty($id)) {
+            $id = $this->input->post('id', true);
+        }
+        if (empty($id)) {
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => 'Record id is required.',
+            ]));
+        }
         $updateStaus = $this->payroll_model->updatePaymentStatus($status, $id);
-        redirect("admin/payroll");
+        return $this->output->set_output(json_encode([
+            'status' => true,
+            'success_message' => 'Payment status updated successfully.',
+            'data' => array('id' => $id, 'payment_status' => $status),
+        ]));
     }
 
     public function paymentSuccess()
@@ -595,9 +665,16 @@ class Payroll extends My_Controller
             $negative_allowance         = $this->payroll_model->getAllowance($result["id"], "negative");
             $data["negative_allowance"] = $negative_allowance;
             $data["result"]             = $result;
-            $this->load->view("admin/payroll/payslipview", $data);
+            return $this->output->set_output(json_encode([
+                'status' => true,
+                'success_message' => 'Payslip details.',
+                'data' => $data,
+            ]));
         } else {
-            echo "<div class='alert alert-info'>" . $this->lang->line('no_record_found') . "</div>";
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => 'No record found.',
+            ]));
         }
     }
 
@@ -615,7 +692,11 @@ class Payroll extends My_Controller
         $negative_allowance         = $this->payroll_model->getAllowance($result["id"], "negative");
         $data["negative_allowance"] = $negative_allowance;
         $data["result"]             = $result;
-        $this->load->view("admin/payroll/payslippdf", $data);
+        return $this->output->set_output(json_encode([
+            'status' => true,
+            'success_message' => 'Payslip PDF data.',
+            'data' => $data,
+        ]));
     }
 
     public function payrollreport()
@@ -640,20 +721,32 @@ class Payroll extends My_Controller
 
         $this->form_validation->set_rules('year', $this->lang->line('year'), 'trim|required|xss_clean');
         if ($this->form_validation->run() == false) {
-            $this->load->view("layout/header", $data);
-            $this->load->view("admin/payroll/payrollreport", $data);
-            $this->load->view("layout/footer", $data);
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => strip_tags(validation_errors()),
+            ]));
         } else {
             $result = $this->payroll_model->getpayrollReport($month, $year, $role);
             $data["result"] = $result;
-            $this->load->view("layout/header", $data);
-            $this->load->view("admin/payroll/payrollreport", $data);
-            $this->load->view("layout/footer", $data);
+            return $this->output->set_output(json_encode([
+                'status' => true,
+                'success_message' => 'Payroll report.',
+                'data' => $data,
+            ]));
         }
     }
 
-    public function deletepayroll($payslipid, $month, $year, $role = '')
+    public function deletepayroll($payslipid = null, $month = null, $year = null, $role = '')
     {
+        if (empty($payslipid)) {
+            $payslipid = $this->input->post('id', true);
+        }
+        if (empty($payslipid)) {
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => 'Record id is required.',
+            ]));
+        }
         if (!$this->rbac->hasPrivilege('staff_payroll', 'can_delete')) {
             access_denied();
         }
@@ -661,18 +754,35 @@ class Payroll extends My_Controller
             $this->payroll_model->deletePayslip($payslipid);
         }
 
-        redirect('admin/payroll/search/' . $month . "/" . $year . "/" . $role);
+        return $this->output->set_output(json_encode([
+            'status' => true,
+            'success_message' => 'Payslip deleted successfully.',
+            'data' => array('id' => $payslipid),
+        ]));
     }
 
-    public function revertpayroll($payslipid, $month, $year, $role = '')
+    public function revertpayroll($payslipid = null, $month = null, $year = null, $role = '')
     {
+        if (empty($payslipid)) {
+            $payslipid = $this->input->post('id', true);
+        }
+        if (empty($payslipid)) {
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => 'Record id is required.',
+            ]));
+        }
         if (!$this->rbac->hasPrivilege('staff_payroll', 'can_delete')) {
             access_denied();
         }
         if (!empty($payslipid)) {
             $this->payroll_model->revertPayslipStatus($payslipid);
         }
-        redirect('admin/payroll/search/' . $month . "/" . $year . "/" . $role);
+        return $this->output->set_output(json_encode([
+            'status' => true,
+            'success_message' => 'Payslip status reverted successfully.',
+            'data' => array('id' => $payslipid),
+        ]));
 
     }
 

@@ -27,7 +27,17 @@ class Department extends MY_Controller {
                     ]));
     }
 
-    function departmentedit($id) {
+    function departmentedit($id = null) {
+
+        if (empty($id)) {
+            $id = $this->input->post('id', true);
+        }
+        if (empty($id)) {
+            return $this->output->set_output(json_encode([
+                        'status' => false,
+                        'error_message' => 'Record id is required.',
+            ]));
+        }
 
         $result = $this->department_model->getDepartmentType($id);
 
@@ -35,15 +45,31 @@ class Department extends MY_Controller {
         $data["title"] = $this->lang->line('edit_department');
         $departmentTypes = $this->department_model->getDepartmentType();
         $data["departmenttype"] = $departmentTypes;
-        $this->load->view("layout/header");
-        $this->load->view("admin/staff/departmentType", $data);
-        $this->load->view("layout/footer");
+        return $this->output->set_output(json_encode([
+                    'status' => true,
+                    'success_message' => 'Department details fetched successfully.',
+                    'data' => $data,
+        ]));
     }
 
-    function departmentdelete($id) {
+    function departmentdelete($id = null) {
+
+        if (empty($id)) {
+            $id = $this->input->post('id', true);
+        }
+        if (empty($id)) {
+            return $this->output->set_output(json_encode([
+                        'status' => false,
+                        'error_message' => 'Record id is required.',
+            ]));
+        }
 
         $this->department_model->deleteDepartment($id);
-        redirect('admin/department/department');
+        return $this->output->set_output(json_encode([
+                    'status' => true,
+                    'success_message' => 'Department deleted successfully.',
+                    'data' => [],
+        ]));
     }
 
 }

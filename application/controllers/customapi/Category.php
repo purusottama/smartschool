@@ -4,107 +4,158 @@ if (!defined('BASEPATH')) {
     exit('No direct script access allowed');
 }
 
-class Category extends My_Controller
+class Category extends MY_Controller
 {
 
     public function __construct()
     {
+        // English (en) language and the JSON content type are applied centrally
+        // for every customapi/* request in MY_Controller.
         parent::__construct();
     }
 
+    /**
+     * List every student category. Same data source (`categories` table) the
+     * admin/web panel reads, so both stay in sync.
+     */
     public function index()
     {
-        // if (!$this->rbac->hasPrivilege('student_categories', 'can_view')) {
-        //     access_denied();
-        // }
-        // $this->session->set_userdata('top_menu', 'Student Information');
-        // $this->session->set_userdata('sub_menu', 'category/index');
-        // $data['title']        = $this->lang->line('category_list');
-        $category_result      = $this->category_model->get();
-        $data['categorylist'] = $category_result;
+        $data['categorylist'] = $this->category_model->get();
 
-         return $this->output->set_output(json_encode([
-                        'status' => true,
-                        'success_message' => "Approved Leave List ",
-                        'data' => $data
-                    ]));
-        // $this->load->view('layout/header', $data);
-        // $this->load->view('category/categoryList', $data);
-        // $this->load->view('layout/footer', $data);
+        return $this->output->set_output(json_encode([
+            'status'          => true,
+            'success_message' => 'Category list',
+            'data'            => $data,
+        ]));
     }
 
-    public function view($id)
+    /**
+     * Fetch a single category by id (id comes from the POST body or URL segment).
+     */
+    public function view($id = null)
     {
-        if (!$this->rbac->hasPrivilege('student_categories', 'can_view')) {
-            access_denied();
+        $id = $this->resolveId($id);
+        if (empty($id)) {
+            return $this->fail('Category id is required.');
         }
-        $data['title']    = $this->lang->line('category_list');
-        $category         = $this->category_model->get($id);
-        $data['category'] = $category;
-        $this->load->view('layout/header', $data);
-        $this->load->view('category/categoryShow', $data);
-        $this->load->view('layout/footer', $data);
+
+        $category = $this->category_model->get($id);
+        if (empty($category)) {
+            return $this->fail('Category not found.');
+        }
+
+        return $this->output->set_output(json_encode([
+            'status'          => true,
+            'success_message' => 'Category detail',
+            'data'            => ['category' => $category],
+        ]));
     }
 
-    public function delete($id)
-    {
-        if (!$this->rbac->hasPrivilege('student_categories', 'can_delete')) {
-            access_denied();
-        }
-        $data['title'] = $this->lang->line('category_list');
-        $this->category_model->remove($id);
-        $this->session->set_flashdata('msgdelete', '<div class="alert alert-success text-left">' . $this->lang->line('delete_message') . '</div>');
-        redirect('category/index');
-    }
-
+    /**
+     * Create a category. Writes to the shared `categories` table, so the new
+     * record is immediately visible in the admin/web panel.
+     */
     public function create()
     {
-        if (!$this->rbac->hasPrivilege('student_categories', 'can_add')) {
-            access_denied();
-        }
-        $data['title']        = $this->lang->line('add_category');
-        $category_result      = $this->category_model->get();
-        $data['categorylist'] = $category_result;
         $this->form_validation->set_rules('category', $this->lang->line('category'), 'trim|required|xss_clean');
+
         if ($this->form_validation->run() == false) {
-            $this->load->view('layout/header', $data);
-            $this->load->view('category/categoryList', $data);
-            $this->load->view('layout/footer', $data);
-        } else {
-            $data = array(
-                'category' => $this->input->post('category'),
-            );
-            $this->category_model->add($data);
-            $this->session->set_flashdata('msg', '<div class="alert alert-success text-left">' . $this->lang->line('success_message') . '</div>');
-            redirect('category/index');
+            return $this->fail(strip_tags(validation_errors()));
         }
+
+        $insert = ['category' => $this->input->post('category', true)];
+        $id     = $this->category_model->add($insert);
+
+        return $this->output->set_output(json_encode([
+            'status'          => true,
+            'success_message' => 'Category has been added successfully.',
+            'data'            => [
+                'category'     => $this->category_model->get($id),
+                'categorylist' => $this->category_model->get(),
+            ],
+        ]));
     }
 
-    public function edit($id)
+    /**
+     * Update an existing category (id + category from the POST body).
+     */
+    public function edit($id = null)
     {
-        if (!$this->rbac->hasPrivilege('student_categories', 'can_edit')) {
-            access_denied();
+        $id = $this->resolveId($id);
+        if (empty($id)) {
+            return $this->fail('Category id is required.');
         }
-        $data['title']        = $this->lang->line('edit_category');
-        $category_result      = $this->category_model->get();
-        $data['categorylist'] = $category_result;
-        $data['id']           = $id;
-        $category             = $this->category_model->get($id);
-        $data['category']     = $category;
+
+        if (empty($this->category_model->get($id))) {
+            return $this->fail('Category not found.');
+        }
+
         $this->form_validation->set_rules('category', $this->lang->line('category'), 'trim|required|xss_clean');
+
         if ($this->form_validation->run() == false) {
-            $this->load->view('layout/header', $data);
-            $this->load->view('category/categoryEdit', $data);
-            $this->load->view('layout/footer', $data);
-        } else {
-            $data = array(
-                'id'       => $id,
-                'category' => $this->input->post('category'),
-            );
-            $this->category_model->add($data);
-            $this->session->set_flashdata('msg', '<div class="alert alert-success text-left">' . $this->lang->line('update_message') . '</div>');
-            redirect('category/index');
+            return $this->fail(strip_tags(validation_errors()));
         }
+
+        $update = [
+            'id'       => $id,
+            'category' => $this->input->post('category', true),
+        ];
+        $this->category_model->add($update);
+
+        return $this->output->set_output(json_encode([
+            'status'          => true,
+            'success_message' => 'Category has been updated successfully.',
+            'data'            => [
+                'category'     => $this->category_model->get($id),
+                'categorylist' => $this->category_model->get(),
+            ],
+        ]));
+    }
+
+    /**
+     * Delete a category (id from the POST body or URL segment).
+     */
+    public function delete($id = null)
+    {
+        $id = $this->resolveId($id);
+        if (empty($id)) {
+            return $this->fail('Category id is required.');
+        }
+
+        if (empty($this->category_model->get($id))) {
+            return $this->fail('Category not found.');
+        }
+
+        $this->category_model->remove($id);
+
+        return $this->output->set_output(json_encode([
+            'status'          => true,
+            'success_message' => 'Category has been deleted successfully.',
+            'data'            => ['categorylist' => $this->category_model->get()],
+        ]));
+    }
+
+    /**
+     * Resolve a record id from either the URL segment or the POST body,
+     * so requests work whether the id is sent in the path or as form data.
+     */
+    private function resolveId($id = null)
+    {
+        if (!empty($id)) {
+            return $id;
+        }
+        return $this->input->post('id', true);
+    }
+
+    /**
+     * Standard JSON failure response.
+     */
+    private function fail($message)
+    {
+        return $this->output->set_output(json_encode([
+            'status'        => false,
+            'error_message' => $message,
+        ]));
     }
 
 }

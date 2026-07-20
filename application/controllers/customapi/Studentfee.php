@@ -46,9 +46,12 @@ class Studentfee extends My_Controller
         $data['title']       = 'student fees';
         $class               = $this->class_model->get();
         $data['classlist']   = $class;
-        $this->load->view('layout/header', $data);
-        $this->load->view('studentfee/studentfeeSearch', $data);
-        $this->load->view('layout/footer', $data);
+
+        return $this->output->set_output(json_encode([
+            'status' => true,
+            'success_message' => 'Student fee search data loaded successfully.',
+            'data' => $data,
+        ]));
     }
 
     public function pdf()
@@ -179,9 +182,10 @@ class Studentfee extends My_Controller
         $this->form_validation->set_rules('feegroup[]', $this->lang->line('fee_group'), 'trim|required|xss_clean');
 
         if ($this->form_validation->run() == false) {
-            // $this->load->view('layout/header', $data);
-            // $this->load->view('studentfee/studentSearchFee', $data);
-            // $this->load->view('layout/footer', $data);
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => strip_tags(validation_errors()),
+            ]));
         } else {
             $feegroups = $this->input->post('feegroup');
 
@@ -289,9 +293,11 @@ class Studentfee extends My_Controller
         $class             = $this->class_model->get();
         $data['classlist'] = $class;
         if ($this->input->server('REQUEST_METHOD') == "GET") {
-            $this->load->view('layout/header', $data);
-            $this->load->view('studentfee/reportByClass', $data);
-            $this->load->view('layout/footer', $data);
+            return $this->output->set_output(json_encode([
+                'status' => true,
+                'success_message' => 'Class list loaded successfully.',
+                'data' => $data,
+            ]));
         } else {
             $student_fees_array      = array();
             $class_id                = $this->input->post('class_id');
@@ -312,23 +318,41 @@ class Studentfee extends My_Controller
             $data['class_id']           = $class_id;
             $data['section_id']         = $section_id;
             $data['student_fees_array'] = $student_fees_array;
-            $this->load->view('layout/header', $data);
-            $this->load->view('studentfee/reportByClass', $data);
-            $this->load->view('layout/footer', $data);
+
+            return $this->output->set_output(json_encode([
+                'status' => true,
+                'success_message' => 'Class wise fee report generated successfully.',
+                'data' => $data,
+            ]));
         }
     }
 
-    public function view($id)
+    public function view($id = null)
     {
         if (!$this->rbac->hasPrivilege('collect_fees', 'can_view')) {
             access_denied();
         }
+
+        if (empty($id)) {
+            $id = $this->input->post('id', true);
+        }
+
+        if (empty($id)) {
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => 'Record id is required.',
+            ]));
+        }
+
         $data['title']      = 'studentfee List';
         $studentfee         = $this->studentfee_model->get($id);
         $data['studentfee'] = $studentfee;
-        $this->load->view('layout/header', $data);
-        $this->load->view('studentfee/studentfeeShow', $data);
-        $this->load->view('layout/footer', $data);
+
+        return $this->output->set_output(json_encode([
+            'status' => true,
+            'success_message' => 'Student fee detail loaded successfully.',
+            'data' => $data,
+        ]));
     }
 
     public function deleteFee()
@@ -390,10 +414,21 @@ class Studentfee extends My_Controller
         $this->output->set_output(json_encode($result));
     }
 
-    public function addfee($id)
+    public function addfee($id = null)
     {
         if (!$this->rbac->hasPrivilege('collect_fees', 'can_view')) {
             access_denied();
+        }
+
+        if (empty($id)) {
+            $id = $this->input->post('id', true);
+        }
+
+        if (empty($id)) {
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => 'Record id is required.',
+            ]));
         }
 
         $data['sch_setting']   = $this->sch_setting_detail;
@@ -433,20 +468,33 @@ class Studentfee extends My_Controller
         //required for fee 
 
        // $fee = $this->getstudentfeeOnly($id);
-        
 
-        $this->load->view('layout/header', $data);
-        $this->load->view('studentfee/studentAddfee', $data);
-        $this->load->view('layout/footer', $data);
+
+        return $this->output->set_output(json_encode([
+            'status' => true,
+            'success_message' => 'Student fee detail loaded successfully.',
+            'data' => $data,
+        ]));
     }
 
-    public function getProcessingfees($id)
+    public function getProcessingfees($id = null)
     {
         if (!$this->rbac->hasPrivilege('collect_fees', 'can_add')) {
             access_denied();
         }
 
-        $student               = $this->student_model->getByStudentSession($id);
+        if (empty($id)) {
+            $id = $this->input->post('id', true);
+        }
+
+        if (empty($id)) {
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => 'Record id is required.',
+            ]));
+        }
+
+        $student             = $this->student_model->getByStudentSession($id);
         $route_pickup_point_id = $student['route_pickup_point_id'];
         $student_session_id    = $student['student_session_id'];
 	
@@ -474,11 +522,27 @@ class Studentfee extends My_Controller
         echo json_encode($array);
     }
 
-    public function delete($id)
+    public function delete($id = null)
     {
+        if (empty($id)) {
+            $id = $this->input->post('id', true);
+        }
+
+        if (empty($id)) {
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => 'Record id is required.',
+            ]));
+        }
+
         $data['title'] = 'studentfee List';
         $this->studentfee_model->remove($id);
-        redirect('studentfee/index');
+
+        return $this->output->set_output(json_encode([
+            'status' => true,
+            'success_message' => 'Record deleted successfully.',
+            'data' => $data,
+        ]));
     }
 
     public function create()
@@ -489,41 +553,63 @@ class Studentfee extends My_Controller
         $data['title'] = 'Add studentfee';
         $this->form_validation->set_rules('category', $this->lang->line('category'), 'trim|required|xss_clean');
         if ($this->form_validation->run() == false) {
-            $this->load->view('layout/header', $data);
-            $this->load->view('studentfee/studentfeeCreate', $data);
-            $this->load->view('layout/footer', $data);
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => strip_tags(validation_errors()),
+            ]));
         } else {
             $data = array(
                 'category' => $this->input->post('category'),
             );
             $this->studentfee_model->add($data);
-            $this->session->set_flashdata('msg', '<div studentfee="alert alert-success text-center">' . $this->lang->line('success_message') . '</div>');
-            redirect('studentfee/index');
+
+            return $this->output->set_output(json_encode([
+                'status' => true,
+                'success_message' => 'Record added successfully.',
+                'data' => $data,
+            ]));
         }
     }
 
-    public function edit($id)
+    public function edit($id = null)
     {
         if (!$this->rbac->hasPrivilege('collect_fees', 'can_edit')) {
             access_denied();
         }
+
+        if (empty($id)) {
+            $id = $this->input->post('id', true);
+        }
+
+        if (empty($id)) {
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => 'Record id is required.',
+            ]));
+        }
+
         $data['title']      = 'Edit studentfees';
         $data['id']         = $id;
         $studentfee         = $this->studentfee_model->get($id);
         $data['studentfee'] = $studentfee;
         $this->form_validation->set_rules('category', $this->lang->line('category'), 'trim|required|xss_clean');
         if ($this->form_validation->run() == false) {
-            $this->load->view('layout/header', $data);
-            $this->load->view('studentfee/studentfeeEdit', $data);
-            $this->load->view('layout/footer', $data);
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => strip_tags(validation_errors()),
+            ]));
         } else {
             $data = array(
                 'id'       => $id,
                 'category' => $this->input->post('category'),
             );
             $this->studentfee_model->add($data);
-            $this->session->set_flashdata('msg', '<div studentfee="alert alert-success text-center">' . $this->lang->line('update_message') . '</div>');
-            redirect('studentfee/index');
+
+            return $this->output->set_output(json_encode([
+                'status' => true,
+                'success_message' => 'Record updated successfully.',
+                'data' => $data,
+            ]));
         }
     }
 
@@ -739,13 +825,21 @@ class Studentfee extends My_Controller
             file_get_contents($url);
         }
 
-        
-        redirect('studentfee/addfee/'.$student_session_id);
+
+        return $this->output->set_output(json_encode([
+            'status' => true,
+            'success_message' => 'Payment verified and fee collected successfully.',
+            'data' => array('student_session_id' => $student_session_id, 'razorpay_payment_id' => $payment_id),
+        ]));
 
     } catch (Exception $e) {
 
         log_message('error', $e->getMessage());
-        redirect('studentfee/index?payment=failed'.$e->getMessage());
+
+        return $this->output->set_output(json_encode([
+            'status' => false,
+            'error_message' => 'Payment failed: ' . $e->getMessage(),
+        ]));
     }
 }
 
@@ -1104,12 +1198,18 @@ class Studentfee extends My_Controller
         }
         $data['feearray'] = $fees_array;       
 		
-        if($this->thermal_print_module == 1 && $this->thermal_print_enable == 1){   
-			$data['thermal_print'] = $this->thermal_print_result;			
-			$this->load->view('print/thermalPrintFeesByGroupArray', $data);             
+        if($this->thermal_print_module == 1 && $this->thermal_print_enable == 1){
+			$data['thermal_print'] = $this->thermal_print_result;
+			$page = $this->load->view('print/thermalPrintFeesByGroupArray', $data, true);
         }else{
-			$this->load->view('print/printFeesByGroupArray', $data); 
-        }        
+			$page = $this->load->view('print/printFeesByGroupArray', $data, true);
+        }
+
+        return $this->output->set_output(json_encode([
+            'status' => true,
+            'success_message' => 'Fee receipt generated successfully.',
+            'data' => array('page' => $page),
+        ]));
     }
 
     public function searchpayment()
@@ -1123,6 +1223,10 @@ class Studentfee extends My_Controller
 
         $this->form_validation->set_rules('paymentid', $this->lang->line('payment_id'), 'trim|required|xss_clean');
         if ($this->form_validation->run() == false) {
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => strip_tags(validation_errors()),
+            ]));
         } else {
             $paymentid = $this->input->post('paymentid');
             $invoice   = explode("/", $paymentid);
@@ -1141,9 +1245,11 @@ class Studentfee extends My_Controller
         }
         $data['sch_setting'] = $this->sch_setting_detail;
 
-        $this->load->view('layout/header', $data);
-        $this->load->view('studentfee/searchpayment', $data);
-        $this->load->view('layout/footer', $data);
+        return $this->output->set_output(json_encode([
+            'status' => true,
+            'success_message' => 'Fee payment detail loaded successfully.',
+            'data' => $data,
+        ]));
     }
 
     public function addfeegroup()

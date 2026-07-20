@@ -226,7 +226,6 @@ public $sch_setting_detail = array();
             $is_first_time_attendance      = true;
             $search               = $this->input->post('search');
             $holiday              = $this->input->post('holiday');
-            $this->session->set_flashdata('msg', '');
             if ($search == "saveattendence") {
             
                 $user_type_ary       = $this->input->post('student_session');
@@ -274,8 +273,11 @@ public $sch_setting_detail = array();
                 // added mail sms code //
 
                 $absent_config = $this->config_attendance['absent'];
-                $this->session->set_flashdata('msg', '<div class="alert alert-success text-left">' . $this->lang->line('success_message') . '</div>');
-                redirect('admin/staffattendance/index');
+                return $this->output->set_output(json_encode([
+                            'status' => true,
+                            'success_message' => 'Staff attendance saved successfully.',
+                            'data' => $data,
+                ]));
             }
 
             $attendencetypes             = $this->attendencetype_model->getStaffAttendanceType();

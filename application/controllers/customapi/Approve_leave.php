@@ -170,14 +170,34 @@ class approve_leave extends My_Controller
         echo json_encode($array);
     }
 
-    public function searchByClassSection($class_id, $student_id)
+    public function searchByClassSection($class_id = null, $student_id = null)
     {
-        $section_id          = $_REQUEST['section_id'];
+        if (empty($class_id)) {
+            $class_id = $this->input->post('class_id', true);
+        }
+
+        if (empty($student_id)) {
+            $student_id = $this->input->post('student_id', true);
+        }
+
+        if (empty($class_id)) {
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => 'Record id is required.',
+            ]));
+        }
+
+        $section_id          = isset($_REQUEST['section_id']) ? $_REQUEST['section_id'] : '';
         $resultlist          = $this->student_model->searchByClassSection($class_id, $section_id);
         $data['resultlist']  = $resultlist;
         $data['select_id']   = $student_id;
         $data['sch_setting'] = $this->sch_setting_detail;
-        $this->load->view('admin/approve_leave/_student_list', $data);
+
+        return $this->output->set_output(json_encode([
+            'status' => true,
+            'success_message' => 'Student list fetched successfully.',
+            'data' => $data,
+        ]));
     }
 
     public function status()

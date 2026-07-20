@@ -61,8 +61,17 @@ class Receive extends MY_Controller
             */
     }
 
-    public function editreceive($id)
+    public function editreceive($id = null)
     {
+        if (empty($id)) {
+            $id = $this->input->post('id', true);
+        }
+        if (empty($id)) {
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => 'Record id is required.',
+            ]));
+        }
         if (!$this->rbac->hasPrivilege('postal_receive', 'can_view')) {
             access_denied();
         }
@@ -73,10 +82,10 @@ class Receive extends MY_Controller
         $data['receiveData'] = $this->dispatch_model->dis_rec_data($id, 'receive');
 
         if ($this->form_validation->run() == false) {
-            $data['receiveList'] = $this->dispatch_model->receive_list();
-            $this->load->view('layout/header');
-            $this->load->view('admin/frontoffice/receiveedit', $data);
-            $this->load->view('layout/footer');
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => strip_tags(validation_errors()),
+            ]));
         } else {
 
             $receive = array(
@@ -101,14 +110,26 @@ class Receive extends MY_Controller
                 $this->media_storage->filedelete($data['receiveData']['image'], "uploads/front_office/dispatch_receive/");
             }
 
-            $this->dispatch_model->update_dispatch('dispatch_receive', $id, 'receive', $receive);        
-            $this->session->set_flashdata('msg', '<div class="alert alert-success">' . $this->lang->line('success_message') . '</div>');
-            redirect('admin/receive');
+            $this->dispatch_model->update_dispatch('dispatch_receive', $id, 'receive', $receive);
+            return $this->output->set_output(json_encode([
+                'status' => true,
+                'success_message' => 'Postal receive updated successfully.',
+                'data' => $receive,
+            ]));
         }
     }
 
-    public function delete($id)
+    public function delete($id = null)
     {
+        if (empty($id)) {
+            $id = $this->input->post('id', true);
+        }
+        if (empty($id)) {
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => 'Record id is required.',
+            ]));
+        }
         if (!$this->rbac->hasPrivilege('postal_receive', 'can_delete')) {
             access_denied();
         }
@@ -119,6 +140,11 @@ class Receive extends MY_Controller
         }
 
         $this->dispatch_model->delete($id);
+        return $this->output->set_output(json_encode([
+            'status' => true,
+            'success_message' => 'Postal receive deleted successfully.',
+            'data' => array('id' => $id),
+        ]));
     }
 
     public function handle_upload($str, $var)

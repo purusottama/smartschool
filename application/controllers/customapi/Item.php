@@ -57,10 +57,6 @@ class Item extends My_Controller
                         'success_message' => "itemcatlist ",
                         'data' => $data
                     ]));
-
-        $this->load->view('layout/header', $data);
-        $this->load->view('admin/item/itemList', $data);
-        $this->load->view('layout/footer', $data);
     }
 
     public function download($file)
@@ -72,14 +68,27 @@ class Item extends My_Controller
         force_download($name, $data);
     }
 
-    public function delete($id)
+    public function delete($id = null)
     {
         if (!$this->rbac->hasPrivilege('item', 'can_delete')) {
             access_denied();
         }
+        if (empty($id)) {
+            $id = $this->input->post('id', true);
+        }
+        if (empty($id)) {
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => 'Record id is required.',
+            ]));
+        }
         $data['title'] = 'Fees Master List';
         $this->item_model->remove($id);
-        redirect('admin/item/index');
+        return $this->output->set_output(json_encode([
+            'status' => true,
+            'success_message' => 'Item deleted successfully.',
+            'data' => $data,
+        ]));
     }
 
     public function getAvailQuantity()
@@ -129,10 +138,19 @@ class Item extends My_Controller
         }
     }
 
-    public function edit($id)
+    public function edit($id = null)
     {
         if (!$this->rbac->hasPrivilege('item', 'can_edit')) {
             access_denied();
+        }
+        if (empty($id)) {
+            $id = $this->input->post('id', true);
+        }
+        if (empty($id)) {
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => 'Record id is required.',
+            ]));
         }
         $data['title']    = 'Edit Fees Master';
         $data['id']       = $id;
@@ -152,9 +170,10 @@ class Item extends My_Controller
             )
         );
         if ($this->form_validation->run() == false) {
-            $this->load->view('layout/header', $data);
-            $this->load->view('admin/item/itemEdit', $data);
-            $this->load->view('layout/footer', $data);
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => strip_tags(validation_errors()),
+            ]));
         } else {
             $data = array(
                 'id'               => $id,
@@ -173,8 +192,11 @@ class Item extends My_Controller
                 $this->item_model->add($data_img);
             }
 
-            $this->session->set_flashdata('msg', '<div class="alert alert-success text-left">' . $this->lang->line('success_message') . '</div>');
-            redirect('admin/item/index');
+            return $this->output->set_output(json_encode([
+                'status' => true,
+                'success_message' => 'Item updated successfully.',
+                'data' => $data,
+            ]));
         }
     }
 

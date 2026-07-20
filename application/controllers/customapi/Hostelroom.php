@@ -166,9 +166,10 @@ class Hostelroom extends MY_Controller
         $roomtypelist         = $this->roomtype_model->get();
         $data['roomtypelist'] = $roomtypelist;
         if ($this->form_validation->run() == false) {
-            $this->load->view('layout/header');
-            $this->load->view('admin/hostelroom/create', $data);
-            $this->load->view('layout/footer');
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => strip_tags(validation_errors()),
+            ]));
         } else {
             $data = array(
                 'hostel_id'    => $this->input->post('hostel_id'),
@@ -179,8 +180,11 @@ class Hostelroom extends MY_Controller
                 'description'  => $this->input->post('description'),
             );
             $this->hostelroom_model->add($data);
-            $this->session->set_flashdata('msg', '<div class="alert alert-success text-left">' . $this->lang->line('success_message') . '</div>');
-            redirect('admin/hostelroom/index');
+            return $this->output->set_output(json_encode([
+                'status' => true,
+                'success_message' => 'Hostel room created successfully.',
+                'data' => $data,
+            ]));
         }
     }
 
@@ -191,10 +195,19 @@ class Hostelroom extends MY_Controller
         echo json_encode($data);
     }
 
-    public function edit($id)
+    public function edit($id = null)
     {
         if (!$this->rbac->hasPrivilege('hostel_rooms', 'can_edit')) {
             access_denied();
+        }
+        if (empty($id)) {
+            $id = $this->input->post('id', true);
+        }
+        if (empty($id)) {
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => 'Record id is required.',
+            ]));
         }
         $data['title']          = 'Add Hostel';
         $data['id']             = $id;
@@ -212,9 +225,10 @@ class Hostelroom extends MY_Controller
         $this->form_validation->set_rules('no_of_bed', $this->lang->line('number_of_bed'), 'trim|required|numeric|xss_clean');
         $this->form_validation->set_rules('cost_per_bed', $this->lang->line('cost_per_bed'), 'trim|required|numeric|xss_clean');
         if ($this->form_validation->run() == false) {
-            $this->load->view('layout/header');
-            $this->load->view('admin/hostelroom/edit', $data);
-            $this->load->view('layout/footer');
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => strip_tags(validation_errors()),
+            ]));
         } else {
             $data = array(
                 'id'           => $this->input->post('id'),
@@ -226,19 +240,35 @@ class Hostelroom extends MY_Controller
                 'description'  => $this->input->post('description'),
             );
             $this->hostelroom_model->add($data);
-            $this->session->set_flashdata('msg', '<div class="alert alert-success text-left">' . $this->lang->line('update_message') . '</div>');
-            redirect('admin/hostelroom/index');
+            return $this->output->set_output(json_encode([
+                'status' => true,
+                'success_message' => 'Hostel room updated successfully.',
+                'data' => $data,
+            ]));
         }
     }
 
-    public function delete($id)
+    public function delete($id = null)
     {
         if (!$this->rbac->hasPrivilege('hostel_rooms', 'can_delete')) {
             access_denied();
         }
+        if (empty($id)) {
+            $id = $this->input->post('id', true);
+        }
+        if (empty($id)) {
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => 'Record id is required.',
+            ]));
+        }
         $data['title'] = 'Fees Master List';
         $this->hostelroom_model->remove($id);
-        redirect('admin/hostelroom/index');
+        return $this->output->set_output(json_encode([
+            'status' => true,
+            'success_message' => 'Hostel room deleted successfully.',
+            'data' => $data,
+        ]));
     }
 
     public function studenthosteldetails()
@@ -251,9 +281,11 @@ class Hostelroom extends MY_Controller
         $userdata            = $this->customlib->getUserData();
         $data['sch_setting'] = $this->sch_setting_detail;
         $data['hostellist']  = $this->hostel_model->get();
-        $this->load->view("layout/header", $data);
-        $this->load->view("admin/hostelroom/studenthosteldetails", $data);
-        $this->load->view("layout/footer", $data);
+        return $this->output->set_output(json_encode([
+            'status' => true,
+            'success_message' => 'Student hostel details loaded successfully.',
+            'data' => $data,
+        ]));
     }
 
     //datatable function to check search parameter validation

@@ -39,10 +39,17 @@ class Subjectattendence extends MY_Controller
             $attendencetypes             = $this->attendencetype_model->get();
             $data['attendencetypeslist'] = $attendencetypes;
             $data['resultlist']          = $resultlist;
+        } else {
+            return $this->output->set_output(json_encode([
+                        'status' => false,
+                        'error_message' => strip_tags(validation_errors()),
+            ]));
         }
-        $this->load->view('layout/header', $data);
-        $this->load->view('admin/subjectattendence/reportbydate', $data);
-        $this->load->view('layout/footer', $data);
+        return $this->output->set_output(json_encode([
+                    'status' => true,
+                    'success_message' => 'Subject attendance report fetched successfully.',
+                    'data' => $data,
+        ]));
     }
 
     public function index()
@@ -120,8 +127,11 @@ class Subjectattendence extends MY_Controller
                     $this->mailsmsconf->mailsms('student_present_attendence', $present_student_list, $date, $timetable);
                 }
 
-                $this->session->set_flashdata('msg', '<div class="alert alert-success text-left">' . $this->lang->line('success_message') . '</div>');
-                redirect('admin/subjectattendence/index');
+                return $this->output->set_output(json_encode([
+                            'status' => true,
+                            'success_message' => 'Subject attendance saved successfully.',
+                            'data' => $data,
+                ]));
             }
 
             $attendencetypes             = $this->attendencetype_model->get();

@@ -44,9 +44,10 @@ class Schoolhouse extends My_Controller
         $data["description"] = "";
         $this->form_validation->set_rules('house_name', $this->lang->line('name'), 'trim|required|xss_clean');
         if ($this->form_validation->run() == false) {
-            $this->load->view('layout/header', $data);
-            $this->load->view('admin/schoolhouse/houselist', $data);
-            $this->load->view('layout/footer', $data);
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => strip_tags(validation_errors()),
+            ]));
         } else {
             $data = array(
                 'house_name'  => $this->input->post('house_name'),
@@ -55,13 +56,25 @@ class Schoolhouse extends My_Controller
             );
             $this->schoolhouse_model->add($data);
 
-            $this->session->set_flashdata('msg', '<div class="alert alert-success text-left">' . $this->lang->line('success_message') . '</div>');
-            redirect('admin/schoolhouse/index');
+            return $this->output->set_output(json_encode([
+                'status' => true,
+                'success_message' => 'School house added successfully.',
+                'data' => $data,
+            ]));
         }
     }
 
-    public function edit($id)
+    public function edit($id = null)
     {
+        if (empty($id)) {
+            $id = $this->input->post('id', true);
+        }
+        if (empty($id)) {
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => 'Record id is required.',
+            ]));
+        }
         if (!$this->rbac->hasPrivilege('student_houses', 'can_edit')) {
             access_denied();
         }
@@ -75,9 +88,10 @@ class Schoolhouse extends My_Controller
         $data["description"] = $house["description"];
         $this->form_validation->set_rules('house_name', $this->lang->line('name'), 'trim|required|xss_clean');
         if ($this->form_validation->run() == false) {
-            $this->load->view('layout/header', $data);
-            $this->load->view('admin/schoolhouse/houselist', $data);
-            $this->load->view('layout/footer', $data);
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => strip_tags(validation_errors()),
+            ]));
         } else {
             $data = array(
                 'id'          => $id,
@@ -86,21 +100,36 @@ class Schoolhouse extends My_Controller
                 'description' => $this->input->post('description'),
             );
             $this->schoolhouse_model->add($data);
-            $this->session->set_flashdata('msg', '<div class="alert alert-success text-left">' . $this->lang->line('update_message') . '</div>');
-            redirect('admin/schoolhouse');
+            return $this->output->set_output(json_encode([
+                'status' => true,
+                'success_message' => 'School house updated successfully.',
+                'data' => $data,
+            ]));
         }
     }
 
-    public function delete($id)
+    public function delete($id = null)
     {
+        if (empty($id)) {
+            $id = $this->input->post('id', true);
+        }
+        if (empty($id)) {
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => 'Record id is required.',
+            ]));
+        }
         if (!$this->rbac->hasPrivilege('student_houses', 'can_delete')) {
             access_denied();
         }
         if (!empty($id)) {
             $this->schoolhouse_model->delete($id);
-            $this->session->set_flashdata('msgdelete', '<div class="alert alert-success text-left">' . $this->lang->line('delete_message') . '</div>');
         }
-        redirect('admin/schoolhouse/');
+        return $this->output->set_output(json_encode([
+            'status' => true,
+            'success_message' => 'School house deleted successfully.',
+            'data' => array('id' => $id),
+        ]));
     }
 
 }

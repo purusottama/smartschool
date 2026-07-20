@@ -174,7 +174,12 @@ public $sch_setting_detail = array();
         $data['role_id'] = $role->id;
         $data['result'] = $this->syllabus_model->get_subject_syllabus($data, $staff_id);
         $data['result'] = $data['result'][0];
-        //$this->load->view('admin/syllabus/_get_subject_syllabus', $data);
+
+        return $this->output->set_output(json_encode([
+            'status' => true,
+            'success_message' => 'Subject syllabus loaded successfully.',
+            'data' => $data,
+        ]));
     }
 
     public function holiday(){

@@ -1,12 +1,12 @@
 {
     "info": {
-        "name": "Smart School \u2014 Multi-School (2 schools, all roles)",
-        "description": "Multi-tenant demo. Pick a school via {{school_id}}/{{school_code}} then run a login.\n\nAuth paths:\n- Student/Parent: POST {{base_url}}/api/auth/login (returns token -> auto-stored in {{access_token}}).\n- Staff (Admin/Teacher/Accountant): POST {{base_url}}/customapi/login/staffLogin (session-based).\n\nSwitch schools by changing {{school_id}} (1=Greenwood, 2=Sunrise) and the matching credentials in the environment.",
+        "name": "Smart School \u2014 Multi-School FINAL (all logins, 2 schools)",
+        "description": "Explicit login for every role in both schools. Click any login and Send:\n- Staff (Admin/Teacher/Accountant): customapi/login/staffLogin (session).\n- Student/Parent: api/auth/login (returns token -> auto-stored in {{access_token}}).\nEach login sets {{school_id}} automatically. Then use folder 'Student data' with the stored token.\n\nSet {{base_url}} in the environment (e.g. http://localhost/smartschool).",
         "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
     },
     "item": [
         {
-            "name": "0. Schools",
+            "name": "0. Schools list",
             "item": [
                 {
                     "name": "Schools :: list",
@@ -18,10 +18,6 @@
                                 "value": "application/json"
                             }
                         ],
-                        "body": {
-                            "mode": "urlencoded",
-                            "urlencoded": []
-                        },
                         "url": {
                             "raw": "{{base_url}}/customapi/schools/list",
                             "host": [
@@ -32,10 +28,58 @@
                                 "schools",
                                 "list"
                             ]
-                        },
-                        "description": "Public list of active schools for the app login-screen picker."
+                        }
                     },
-                    "response": [],
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "1. Login \u2014 Greenwood (school_id=1)",
+            "item": [
+                {
+                    "name": "School Admin",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "urlencoded",
+                            "urlencoded": [
+                                {
+                                    "key": "username",
+                                    "value": "admin.greenwood@greenwood.test",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "password",
+                                    "value": "School@123",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "school_id",
+                                    "value": "1",
+                                    "type": "text"
+                                }
+                            ]
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/customapi/login/staffLogin",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "customapi",
+                                "login",
+                                "staffLogin"
+                            ]
+                        },
+                        "description": "School Admin of school #1 (staff, email login, session-based)."
+                    },
                     "event": [
                         {
                             "listen": "test",
@@ -43,19 +87,135 @@
                                 "type": "text/javascript",
                                 "exec": [
                                     "var j = pm.response.json();",
-                                    "pm.test('has schools', function(){ pm.expect(j.status).to.eql(true); });"
+                                    "pm.test('School Admin login', function(){ pm.expect(j.status).to.eql(true); });",
+                                    "pm.environment.set('school_id', '1');",
+                                    "if (j.result && j.result.id) pm.environment.set('staff_id', j.result.id);"
                                 ]
                             }
                         }
-                    ]
-                }
-            ]
-        },
-        {
-            "name": "1. Login \u2014 Student & Parent (token)",
-            "item": [
+                    ],
+                    "response": []
+                },
                 {
-                    "name": "Student login (uses {{school_id}})",
+                    "name": "Teacher",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "urlencoded",
+                            "urlencoded": [
+                                {
+                                    "key": "username",
+                                    "value": "tina.greenwood@greenwood.test",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "password",
+                                    "value": "School@123",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "school_id",
+                                    "value": "1",
+                                    "type": "text"
+                                }
+                            ]
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/customapi/login/staffLogin",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "customapi",
+                                "login",
+                                "staffLogin"
+                            ]
+                        },
+                        "description": "Teacher of school #1 (staff, email login, session-based)."
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "var j = pm.response.json();",
+                                    "pm.test('Teacher login', function(){ pm.expect(j.status).to.eql(true); });",
+                                    "pm.environment.set('school_id', '1');",
+                                    "if (j.result && j.result.id) pm.environment.set('staff_id', j.result.id);"
+                                ]
+                            }
+                        }
+                    ],
+                    "response": []
+                },
+                {
+                    "name": "Accountant (Staff)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "urlencoded",
+                            "urlencoded": [
+                                {
+                                    "key": "username",
+                                    "value": "amy.greenwood@greenwood.test",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "password",
+                                    "value": "School@123",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "school_id",
+                                    "value": "1",
+                                    "type": "text"
+                                }
+                            ]
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/customapi/login/staffLogin",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "customapi",
+                                "login",
+                                "staffLogin"
+                            ]
+                        },
+                        "description": "Accountant (Staff) of school #1 (staff, email login, session-based)."
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "var j = pm.response.json();",
+                                    "pm.test('Accountant (Staff) login', function(){ pm.expect(j.status).to.eql(true); });",
+                                    "pm.environment.set('school_id', '1');",
+                                    "if (j.result && j.result.id) pm.environment.set('staff_id', j.result.id);"
+                                ]
+                            }
+                        }
+                    ],
+                    "response": []
+                },
+                {
+                    "name": "Student",
                     "request": {
                         "method": "POST",
                         "header": [
@@ -74,7 +234,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n    \"username\": \"{{student_user}}\",\n    \"password\": \"{{student_pass}}\",\n    \"deviceToken\": \"postman-device\",\n    \"school_id\": \"{{school_id}}\"\n}",
+                            "raw": "{\n    \"username\": \"std.greenwood\",\n    \"password\": \"Student@123\",\n    \"deviceToken\": \"postman-device\",\n    \"school_id\": 1\n}",
                             "options": {
                                 "raw": {
                                     "language": "json"
@@ -92,9 +252,8 @@
                                 "login"
                             ]
                         },
-                        "description": "Scoped to {{school_id}}. Auto-stores {{access_token}}, {{user_id}}, {{student_id}}."
+                        "description": "Student of school #1 (token login; stores access_token/user_id)."
                     },
-                    "response": [],
                     "event": [
                         {
                             "listen": "test",
@@ -102,17 +261,19 @@
                                 "type": "text/javascript",
                                 "exec": [
                                     "var j = pm.response.json();",
-                                    "if (j && j.token) { pm.environment.set('access_token', j.token); console.log('token stored'); }",
-                                    "if (j && j.id) { pm.environment.set('user_id', j.id); }",
-                                    "if (j && j.record && j.record.student_id) { pm.environment.set('student_id', j.record.student_id); }",
-                                    "pm.test('login success', function(){ pm.expect(String(j.status)).to.eql('1'); });"
+                                    "pm.test('Student login', function(){ pm.expect(String(j.status)).to.eql('1'); });",
+                                    "if (j.token) pm.environment.set('access_token', j.token);",
+                                    "if (j.id) pm.environment.set('user_id', j.id);",
+                                    "if (j.record && j.record.student_id) pm.environment.set('student_id', j.record.student_id);",
+                                    "pm.environment.set('school_id', '1');"
                                 ]
                             }
                         }
-                    ]
+                    ],
+                    "response": []
                 },
                 {
-                    "name": "Parent login (uses {{school_id}})",
+                    "name": "Parent",
                     "request": {
                         "method": "POST",
                         "header": [
@@ -131,7 +292,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n    \"username\": \"{{parent_user}}\",\n    \"password\": \"{{parent_pass}}\",\n    \"deviceToken\": \"postman-device\",\n    \"school_id\": \"{{school_id}}\"\n}",
+                            "raw": "{\n    \"username\": \"par.greenwood\",\n    \"password\": \"Parent@123\",\n    \"deviceToken\": \"postman-device\",\n    \"school_id\": 1\n}",
                             "options": {
                                 "raw": {
                                     "language": "json"
@@ -149,9 +310,8 @@
                                 "login"
                             ]
                         },
-                        "description": "Scoped to {{school_id}}."
+                        "description": "Parent of school #1 (token login; stores access_token/user_id)."
                     },
-                    "response": [],
                     "event": [
                         {
                             "listen": "test",
@@ -159,22 +319,24 @@
                                 "type": "text/javascript",
                                 "exec": [
                                     "var j = pm.response.json();",
-                                    "if (j && j.token) { pm.environment.set('access_token', j.token); console.log('token stored'); }",
-                                    "if (j && j.id) { pm.environment.set('user_id', j.id); }",
-                                    "if (j && j.record && j.record.student_id) { pm.environment.set('student_id', j.record.student_id); }",
-                                    "pm.test('login success', function(){ pm.expect(String(j.status)).to.eql('1'); });"
+                                    "pm.test('Parent login', function(){ pm.expect(String(j.status)).to.eql('1'); });",
+                                    "if (j.token) pm.environment.set('access_token', j.token);",
+                                    "if (j.id) pm.environment.set('user_id', j.id);",
+                                    "if (j.record && j.record.student_id) pm.environment.set('student_id', j.record.student_id);",
+                                    "pm.environment.set('school_id', '1');"
                                 ]
                             }
                         }
-                    ]
+                    ],
+                    "response": []
                 }
             ]
         },
         {
-            "name": "2. Login \u2014 Staff (Admin/Teacher/Accountant)",
+            "name": "2. Login \u2014 Sunrise (school_id=2)",
             "item": [
                 {
-                    "name": "School Admin login",
+                    "name": "School Admin",
                     "request": {
                         "method": "POST",
                         "header": [
@@ -188,17 +350,17 @@
                             "urlencoded": [
                                 {
                                     "key": "username",
-                                    "value": "{{admin_email}}",
+                                    "value": "admin.sunrise@sunrise.test",
                                     "type": "text"
                                 },
                                 {
                                     "key": "password",
-                                    "value": "{{staff_pass}}",
+                                    "value": "School@123",
                                     "type": "text"
                                 },
                                 {
                                     "key": "school_id",
-                                    "value": "{{school_id}}",
+                                    "value": "2",
                                     "type": "text"
                                 }
                             ]
@@ -214,9 +376,8 @@
                                 "staffLogin"
                             ]
                         },
-                        "description": "School Admin of the selected school (session-based)."
+                        "description": "School Admin of school #2 (staff, email login, session-based)."
                     },
-                    "response": [],
                     "event": [
                         {
                             "listen": "test",
@@ -224,15 +385,17 @@
                                 "type": "text/javascript",
                                 "exec": [
                                     "var j = pm.response.json();",
-                                    "pm.test('staff login ok', function(){ pm.expect(j.status).to.eql(true); });",
-                                    "if (j && j.result && j.result.id) { pm.environment.set('staff_id', j.result.id); }"
+                                    "pm.test('School Admin login', function(){ pm.expect(j.status).to.eql(true); });",
+                                    "pm.environment.set('school_id', '2');",
+                                    "if (j.result && j.result.id) pm.environment.set('staff_id', j.result.id);"
                                 ]
                             }
                         }
-                    ]
+                    ],
+                    "response": []
                 },
                 {
-                    "name": "Teacher login",
+                    "name": "Teacher",
                     "request": {
                         "method": "POST",
                         "header": [
@@ -246,17 +409,17 @@
                             "urlencoded": [
                                 {
                                     "key": "username",
-                                    "value": "{{teacher_email}}",
+                                    "value": "tina.sunrise@sunrise.test",
                                     "type": "text"
                                 },
                                 {
                                     "key": "password",
-                                    "value": "{{staff_pass}}",
+                                    "value": "School@123",
                                     "type": "text"
                                 },
                                 {
                                     "key": "school_id",
-                                    "value": "{{school_id}}",
+                                    "value": "2",
                                     "type": "text"
                                 }
                             ]
@@ -272,9 +435,8 @@
                                 "staffLogin"
                             ]
                         },
-                        "description": "Teacher of the selected school (session-based)."
+                        "description": "Teacher of school #2 (staff, email login, session-based)."
                     },
-                    "response": [],
                     "event": [
                         {
                             "listen": "test",
@@ -282,15 +444,17 @@
                                 "type": "text/javascript",
                                 "exec": [
                                     "var j = pm.response.json();",
-                                    "pm.test('staff login ok', function(){ pm.expect(j.status).to.eql(true); });",
-                                    "if (j && j.result && j.result.id) { pm.environment.set('staff_id', j.result.id); }"
+                                    "pm.test('Teacher login', function(){ pm.expect(j.status).to.eql(true); });",
+                                    "pm.environment.set('school_id', '2');",
+                                    "if (j.result && j.result.id) pm.environment.set('staff_id', j.result.id);"
                                 ]
                             }
                         }
-                    ]
+                    ],
+                    "response": []
                 },
                 {
-                    "name": "Accountant login",
+                    "name": "Accountant (Staff)",
                     "request": {
                         "method": "POST",
                         "header": [
@@ -304,17 +468,17 @@
                             "urlencoded": [
                                 {
                                     "key": "username",
-                                    "value": "{{accountant_email}}",
+                                    "value": "amy.sunrise@sunrise.test",
                                     "type": "text"
                                 },
                                 {
                                     "key": "password",
-                                    "value": "{{staff_pass}}",
+                                    "value": "School@123",
                                     "type": "text"
                                 },
                                 {
                                     "key": "school_id",
-                                    "value": "{{school_id}}",
+                                    "value": "2",
                                     "type": "text"
                                 }
                             ]
@@ -330,9 +494,8 @@
                                 "staffLogin"
                             ]
                         },
-                        "description": "Accountant of the selected school (session-based)."
+                        "description": "Accountant (Staff) of school #2 (staff, email login, session-based)."
                     },
-                    "response": [],
                     "event": [
                         {
                             "listen": "test",
@@ -340,17 +503,135 @@
                                 "type": "text/javascript",
                                 "exec": [
                                     "var j = pm.response.json();",
-                                    "pm.test('staff login ok', function(){ pm.expect(j.status).to.eql(true); });",
-                                    "if (j && j.result && j.result.id) { pm.environment.set('staff_id', j.result.id); }"
+                                    "pm.test('Accountant (Staff) login', function(){ pm.expect(j.status).to.eql(true); });",
+                                    "pm.environment.set('school_id', '2');",
+                                    "if (j.result && j.result.id) pm.environment.set('staff_id', j.result.id);"
                                 ]
                             }
                         }
-                    ]
+                    ],
+                    "response": []
+                },
+                {
+                    "name": "Student",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Client-Service",
+                                "value": "smartschool"
+                            },
+                            {
+                                "key": "Auth-Key",
+                                "value": "schoolAdmin@"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"username\": \"std.sunrise\",\n    \"password\": \"Student@123\",\n    \"deviceToken\": \"postman-device\",\n    \"school_id\": 2\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/auth/login",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "login"
+                            ]
+                        },
+                        "description": "Student of school #2 (token login; stores access_token/user_id)."
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "var j = pm.response.json();",
+                                    "pm.test('Student login', function(){ pm.expect(String(j.status)).to.eql('1'); });",
+                                    "if (j.token) pm.environment.set('access_token', j.token);",
+                                    "if (j.id) pm.environment.set('user_id', j.id);",
+                                    "if (j.record && j.record.student_id) pm.environment.set('student_id', j.record.student_id);",
+                                    "pm.environment.set('school_id', '2');"
+                                ]
+                            }
+                        }
+                    ],
+                    "response": []
+                },
+                {
+                    "name": "Parent",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Client-Service",
+                                "value": "smartschool"
+                            },
+                            {
+                                "key": "Auth-Key",
+                                "value": "schoolAdmin@"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"username\": \"par.sunrise\",\n    \"password\": \"Parent@123\",\n    \"deviceToken\": \"postman-device\",\n    \"school_id\": 2\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/auth/login",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "login"
+                            ]
+                        },
+                        "description": "Parent of school #2 (token login; stores access_token/user_id)."
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "var j = pm.response.json();",
+                                    "pm.test('Parent login', function(){ pm.expect(String(j.status)).to.eql('1'); });",
+                                    "if (j.token) pm.environment.set('access_token', j.token);",
+                                    "if (j.id) pm.environment.set('user_id', j.id);",
+                                    "if (j.record && j.record.student_id) pm.environment.set('student_id', j.record.student_id);",
+                                    "pm.environment.set('school_id', '2');"
+                                ]
+                            }
+                        }
+                    ],
+                    "response": []
                 }
             ]
         },
         {
-            "name": "3. Student data (scoped by {{school_id}})",
+            "name": "3. Student data (uses stored token + school_id)",
             "item": [
                 {
                     "name": "Common :: getStudentProfiles",
@@ -397,7 +678,7 @@
                                 "getStudentProfiles"
                             ]
                         },
-                        "description": "Returns data only for {{school_id}} once models are scoped."
+                        "description": "Scoped to {{school_id}} (run a login first)."
                     },
                     "response": []
                 },
@@ -446,7 +727,7 @@
                                 "getStudentFee"
                             ]
                         },
-                        "description": "Returns data only for {{school_id}} once models are scoped."
+                        "description": "Scoped to {{school_id}} (run a login first)."
                     },
                     "response": []
                 },
@@ -495,7 +776,7 @@
                                 "timetable"
                             ]
                         },
-                        "description": "Returns data only for {{school_id}} once models are scoped."
+                        "description": "Scoped to {{school_id}} (run a login first)."
                     },
                     "response": []
                 },
@@ -544,17 +825,17 @@
                                 "attendence"
                             ]
                         },
-                        "description": "Returns data only for {{school_id}} once models are scoped."
+                        "description": "Scoped to {{school_id}} (run a login first)."
                     },
                     "response": []
                 }
             ]
         },
         {
-            "name": "4. Logout",
+            "name": "4. Logout (api)",
             "item": [
                 {
-                    "name": "Logout (api)",
+                    "name": "Logout",
                     "request": {
                         "method": "POST",
                         "header": [
@@ -598,8 +879,7 @@
                                 "auth",
                                 "logout"
                             ]
-                        },
-                        "description": "Deletes the token row."
+                        }
                     },
                     "response": []
                 }

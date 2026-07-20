@@ -21,50 +21,69 @@ class Dispatch extends My_Controller
         //     access_denied();
         // }
         $data = array();
-         $data['DispatchList'] = $this->dispatch_model->dispatch_list();
 
-          return $this->output->set_output(json_encode([
-                        'status' => true,
-                        'success_message' => "DispatchList List ",
-                        'data' => $data
-                    ]));
+        // No 'to_title' posted -> plain list request.
+        if ($this->input->post('to_title') === null) {
+            $data['DispatchList'] = $this->dispatch_model->dispatch_list();
 
+            return $this->output->set_output(json_encode([
+                'status'          => true,
+                'success_message' => 'Dispatch list',
+                'data'            => $data,
+            ]));
+        }
 
-        $this->session->set_userdata('top_menu', 'front_office');
-        $this->session->set_userdata('sub_menu', 'admin/dispatch');
+        // 'to_title' posted -> create the dispatch record, the same write the
+        // admin/web screen performs, against the same model and table.
         $this->form_validation->set_rules('to_title', $this->lang->line('to_title'), 'required');
         $this->form_validation->set_rules('file', $this->lang->line('file'), 'callback_handle_upload[file]');
+
         if ($this->form_validation->run() == false) {
-            $data['DispatchList'] = $this->dispatch_model->dispatch_list();
-            $this->load->view('layout/header');
-            $this->load->view('admin/frontoffice/dispatchview', $data);
-            $this->load->view('layout/footer');
-        } else {
-
-            $img_name = $this->media_storage->fileupload("file", "./uploads/front_office/dispatch_receive/");
-
-            $dispatch = array(
-                'reference_no' => $this->input->post('ref_no'),
-                'to_title'     => $this->input->post('to_title'),
-                'address'      => $this->input->post('address'),
-                'note'         => $this->input->post('note'),
-                'from_title'   => $this->input->post('from'),
-                'date'         => $this->customlib->dateFormatToYYYYMMDD($this->input->post('date')),
-                'type'         => 'dispatch',
-                'image'        => $img_name,
-            );
-
-            $dispatch_id = $this->dispatch_model->insert('dispatch_receive', $dispatch);
-
-            $this->session->set_flashdata('msg', '<div class="alert alert-success">' . $this->lang->line('success_message') . '</div>');
-            redirect('admin/dispatch');
+            return $this->output->set_output(json_encode([
+                'status'        => false,
+                'error_message' => strip_tags(validation_errors()),
+            ]));
         }
+
+        $img_name = $this->media_storage->fileupload("file", "./uploads/front_office/dispatch_receive/");
+
+        $dispatch = array(
+            'reference_no' => $this->input->post('ref_no'),
+            'to_title'     => $this->input->post('to_title'),
+            'address'      => $this->input->post('address'),
+            'note'         => $this->input->post('note'),
+            'from_title'   => $this->input->post('from'),
+            'date'         => $this->customlib->dateFormatToYYYYMMDD($this->input->post('date')),
+            'type'         => 'dispatch',
+            'image'        => $img_name,
+        );
+
+        $dispatch_id = $this->dispatch_model->insert('dispatch_receive', $dispatch);
+
+        $data['DispatchList'] = $this->dispatch_model->dispatch_list();
+
+        return $this->output->set_output(json_encode([
+            'status'          => true,
+            'success_message' => 'Dispatch has been added successfully.',
+            'data'            => $data,
+        ]));
     }
 
-    public function editdispatch($id)
+    public function editdispatch($id = null)
     {
         if (!$this->rbac->hasPrivilege('postal_dispatch', 'can_edit')) {
             access_denied();
+        }
+
+        if (empty($id)) {
+            $id = $this->input->post('id', true);
+        }
+
+        if (empty($id)) {
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => 'Record id is required.',
+            ]));
         }
 
         $this->form_validation->set_rules('to_title', $this->lang->line('to_title'), 'required');
@@ -72,10 +91,10 @@ class Dispatch extends My_Controller
         $data['Dispatch_data'] = $this->dispatch_model->dis_rec_data($id, 'dispatch');
 
         if ($this->form_validation->run() == false) {
-            $data['DispatchList'] = $this->dispatch_model->dispatch_list();
-            $this->load->view('layout/header');
-            $this->load->view('admin/frontoffice/dispatchedit', $data);
-            $this->load->view('layout/footer');
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => strip_tags(validation_errors()),
+            ]));
         } else {
             $id;
             $dispatch = array(
@@ -103,8 +122,12 @@ class Dispatch extends My_Controller
             }
 
             $this->dispatch_model->update_dispatch('dispatch_receive', $id, 'dispatch', $dispatch);
-            $this->session->set_flashdata('msg', '<div class="alert alert-success">' . $this->lang->line('update_message') . '</div>');
-            redirect('admin/dispatch');
+
+            return $this->output->set_output(json_encode([
+                'status' => true,
+                'success_message' => 'Dispatch record updated successfully.',
+                'data' => $dispatch,
+            ]));
         }
     }
 
@@ -114,27 +137,77 @@ class Dispatch extends My_Controller
         $this->media_storage->filedownload($dispatch_list['image'], "./uploads/front_office/dispatch_receive");
     }
 
-    public function delete($id)
+    public function delete($id = null)
     {
         if (!$this->rbac->hasPrivilege('postal_dispatch', 'can_delete')) {
             access_denied();
         }
+
+        if (empty($id)) {
+            $id = $this->input->post('id', true);
+        }
+
+        if (empty($id)) {
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => 'Record id is required.',
+            ]));
+        }
+
         $row = $this->dispatch_model->dis_rec_data($id, 'dispatch');
+
+        if (empty($row)) {
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => 'Dispatch record not found.',
+            ]));
+        }
 
         if ($row['image'] != '') {
             $this->media_storage->filedelete($row['image'], "uploads/front_office/dispatch_receive/");
         }
 
         $this->dispatch_model->delete($id);
+
+        return $this->output->set_output(json_encode([
+            'status' => true,
+            'success_message' => 'Dispatch record deleted successfully.',
+            'data' => array('id' => $id),
+        ]));
     }
 
-    public function details($id, $type)
+    public function details($id = null, $type = null)
     {
         if (!$this->rbac->hasPrivilege('postal_dispatch', 'can_view')) {
             access_denied();
         }
+
+        if (empty($id)) {
+            $id = $this->input->post('id', true);
+        }
+
+        if (empty($type)) {
+            $type = $this->input->post('type', true);
+        }
+
+        if (empty($id)) {
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => 'Record id is required.',
+            ]));
+        }
+
+        if (empty($type)) {
+            $type = 'dispatch';
+        }
+
         $data['data'] = $this->dispatch_model->dis_rec_data($id, $type);
-        $this->load->view('admin/frontoffice/dispacthreceviemodel', $data);
+
+        return $this->output->set_output(json_encode([
+            'status' => true,
+            'success_message' => 'Dispatch details fetched successfully.',
+            'data' => $data,
+        ]));
     }
 
     public function handle_upload($str, $var)

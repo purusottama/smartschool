@@ -99,18 +99,31 @@ class Itemstock extends My_Controller
         echo json_encode($data);
     }
 
-    public function delete($id)
+    public function delete($id = null)
     {
         if (!$this->rbac->hasPrivilege('item_stock', 'can_delete')) {
             access_denied();
-        } 
+        }
+        if (empty($id)) {
+            $id = $this->input->post('id', true);
+        }
+        if (empty($id)) {
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => 'Record id is required.',
+            ]));
+        }
         $row = $this->itemstock_model->get($id);
         if ($row['attachment'] != '') {
             $this->media_storage->filedelete($row['attachment'], "uploads/inventory_items/");
         }
 
         $this->itemstock_model->remove($id);
-        redirect('admin/itemstock/index');
+        return $this->output->set_output(json_encode([
+            'status' => true,
+            'success_message' => 'Item stock deleted successfully.',
+            'data' => array('id' => $id),
+        ]));
     }
 
     public function handle_upload($str, $var)
@@ -154,10 +167,19 @@ class Itemstock extends My_Controller
 
     }
 
-    public function edit($id)
+    public function edit($id = null)
     {
         if (!$this->rbac->hasPrivilege('item_stock', 'can_edit')) {
             access_denied();
+        }
+        if (empty($id)) {
+            $id = $this->input->post('id', true);
+        }
+        if (empty($id)) {
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => 'Record id is required.',
+            ]));
         }
         $data['title']        = 'Edit Fees Master';
         $data['id']           = $id;
@@ -183,9 +205,10 @@ class Itemstock extends My_Controller
         $this->form_validation->set_rules('quantity', $this->lang->line('quantity'), 'trim|required|numeric|xss_clean');
 
         if ($this->form_validation->run() == false) {
-            $this->load->view('layout/header', $data);
-            $this->load->view('admin/itemstock/itemEdit', $data);
-            $this->load->view('layout/footer', $data);
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => strip_tags(validation_errors()),
+            ]));
         } else {
             $store_id = ($this->input->post('store_id')) ? $this->input->post('store_id') : null;
             $data     = array(
@@ -214,10 +237,13 @@ class Itemstock extends My_Controller
                 $this->media_storage->filedelete($item['attachment'], "uploads/inventory_items");
             }
 
-            $this->itemstock_model->add($data);         
+            $this->itemstock_model->add($data);
 
-            $this->session->set_flashdata('msg', '<div class="alert alert-success text-left">' . $this->lang->line('update_message') . '</div>');
-            redirect('admin/itemstock/index');
+            return $this->output->set_output(json_encode([
+                'status' => true,
+                'success_message' => 'Item stock updated successfully.',
+                'data' => $data,
+            ]));
         }
     }
 

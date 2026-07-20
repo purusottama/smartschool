@@ -46,17 +46,22 @@ class Income extends My_Controller
             );
             $insert_id = $this->income_model->add($data);
 
-            $this->session->set_flashdata('msg', '<div class="alert alert-success text-left">' . $this->lang->line('success_message') . '</div>');
-            redirect('admin/income/index');
+            return $this->output->set_output(json_encode([
+                'status' => true,
+                'success_message' => 'Income saved successfully.',
+                'data' => $data,
+            ]));
         }
 
         $income_result       = $this->income_model->get();
         $data['incomelist']  = $income_result;
         $incomeHead          = $this->incomehead_model->get();
         $data['incheadlist'] = $incomeHead;
-        $this->load->view('layout/header', $data);
-        $this->load->view('admin/income/incomeList', $data);
-        $this->load->view('layout/footer', $data);
+        return $this->output->set_output(json_encode([
+            'status' => true,
+            'success_message' => 'Income list loaded successfully.',
+            'data' => $data,
+        ]));
     }
 
     public function download($id)
@@ -65,17 +70,28 @@ class Income extends My_Controller
         $this->media_storage->filedownload($income['documents'], "uploads/school_income");
     }
 
-    public function view($id)
+    public function view($id = null)
     {
         if (!$this->rbac->hasPrivilege('income', 'can_view')) {
             access_denied();
         }
+        if (empty($id)) {
+            $id = $this->input->post('id', true);
+        }
+        if (empty($id)) {
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => 'Record id is required.',
+            ]));
+        }
         $data['title']  = 'Fees Master List';
         $income         = $this->income_model->get($id);
         $data['income'] = $income;
-        $this->load->view('layout/header', $data);
-        $this->load->view('income/incomeShow', $data);
-        $this->load->view('layout/footer', $data);
+        return $this->output->set_output(json_encode([
+            'status' => true,
+            'success_message' => 'Income details loaded successfully.',
+            'data' => $data,
+        ]));
     }
 
     public function getByFeecategory()
@@ -99,10 +115,19 @@ class Income extends My_Controller
         echo json_encode($array);
     }
 
-    public function delete($id)
+    public function delete($id = null)
     {
         if (!$this->rbac->hasPrivilege('income', 'can_delete')) {
             access_denied();
+        }
+        if (empty($id)) {
+            $id = $this->input->post('id', true);
+        }
+        if (empty($id)) {
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => 'Record id is required.',
+            ]));
         }
         $data['title'] = 'Fees Master List';
         $row           = $this->income_model->get($id);
@@ -111,7 +136,11 @@ class Income extends My_Controller
         }
 
         $this->income_model->remove($id);
-        redirect('admin/income/index');
+        return $this->output->set_output(json_encode([
+            'status' => true,
+            'success_message' => 'Income deleted successfully.',
+            'data' => $data,
+        ]));
     }
 
     public function create()
@@ -119,16 +148,20 @@ class Income extends My_Controller
         $data['title'] = 'Add Fees Master';
         $this->form_validation->set_rules('income', $this->lang->line('fees_master'), 'trim|required|xss_clean');
         if ($this->form_validation->run() == false) {
-            $this->load->view('layout/header', $data);
-            $this->load->view('income/incomeCreate', $data);
-            $this->load->view('layout/footer', $data);
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => strip_tags(validation_errors()),
+            ]));
         } else {
             $data = array(
                 'income' => $this->input->post('income'),
             );
             $this->income_model->add($data);
-            $this->session->set_flashdata('msg', '<div class="alert alert-success text-left">' . $this->lang->line('success_message') . '</div>');
-            redirect('income/index');
+            return $this->output->set_output(json_encode([
+                'status' => true,
+                'success_message' => 'Income created successfully.',
+                'data' => $data,
+            ]));
         }
     }
 
@@ -172,10 +205,20 @@ class Income extends My_Controller
         return true;
     }
 
-    public function edit($id)
+    public function edit($id = null)
     {
         if (!$this->rbac->hasPrivilege('income', 'can_edit')) {
             access_denied();
+        }
+
+        if (empty($id)) {
+            $id = $this->input->post('id', true);
+        }
+        if (empty($id)) {
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => 'Record id is required.',
+            ]));
         }
 
         $data['id']          = $id;
@@ -190,9 +233,10 @@ class Income extends My_Controller
         $this->form_validation->set_rules('date', $this->lang->line('date'), 'trim|required|xss_clean');
         $this->form_validation->set_rules('documents', $this->lang->line('documents'), 'callback_handle_upload');
         if ($this->form_validation->run() == false) {
-            $this->load->view('layout/header', $data);
-            $this->load->view('admin/income/incomeEdit', $data);
-            $this->load->view('layout/footer', $data);
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => strip_tags(validation_errors()),
+            ]));
         } else {
             $data = array(
                 'id'          => $id,
@@ -218,10 +262,13 @@ class Income extends My_Controller
                 }
             }
 
-            $this->income_model->add($data); 
+            $this->income_model->add($data);
 
-            $this->session->set_flashdata('msg', '<div class="alert alert-success text-left">' . $this->lang->line('success_message') . '</div>');
-            redirect('admin/income/index');
+            return $this->output->set_output(json_encode([
+                'status' => true,
+                'success_message' => 'Income updated successfully.',
+                'data' => $data,
+            ]));
         }
     }
 
@@ -234,9 +281,11 @@ class Income extends My_Controller
         $this->session->set_userdata('top_menu', 'Income');
         $this->session->set_userdata('sub_menu', 'income/incomesearch');
         $data['search_type'] = '';
-        $this->load->view('layout/header', $data);
-        $this->load->view('admin/income/incomeSearch', $data);
-        $this->load->view('layout/footer', $data);
+        return $this->output->set_output(json_encode([
+            'status' => true,
+            'success_message' => 'Income search options loaded successfully.',
+            'data' => $data,
+        ]));
     }
 
     public function getincomelist()

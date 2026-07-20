@@ -36,6 +36,22 @@ class MY_Controller extends CI_Controller
             $language             = ($this->school_details->language);
         }
 
+        // ------------------------------------------------------------------
+        // customapi/* requests: force English (en), emit JSON, and make the
+        // web-only RBAC checks safe no-ops (there is no admin session in the
+        // token-authenticated API context, so $this->rbac would otherwise be
+        // null and every hasPrivilege() call would fatal).
+        // ------------------------------------------------------------------
+        if (strpos($this->router->fetch_directory(), 'customapi') !== false) {
+            $language = 'English';
+            if (!isset($this->rbac)) {
+                $this->rbac = new Api_Rbac_Stub();
+            }
+            $this->output->set_content_type('application/json');
+            $this->registerApiErrorHandlers();
+            $this->establishApiUserContext();
+        }
+
         $this->config->set_item('language', $language);
         $lang_array = array('form_validation_lang');
         $map        = directory_map(APPPATH . "./language/" . $language . "/app_files");
@@ -46,6 +62,163 @@ class MY_Controller extends CI_Controller
         $this->load->language($lang_array, $language);
     }
 
+    /**
+     * Guarantee the JSON contract for customapi requests.
+     *
+     * Without this, an uncaught exception or fatal (typically a request that
+     * omits a required parameter, or a query against a table this install does
+     * not have) renders CodeIgniter's HTML error page. API clients then fail on
+     * JSON parsing rather than reading a clear error. Both handlers below emit
+     * a well-formed JSON body instead.
+     *
+     * The underlying message is exposed only outside production, so live
+     * deployments do not leak schema or file paths to callers.
+     */
+    protected function registerApiErrorHandlers()
+    {
+        $emit = function ($message) {
+            if (!headers_sent()) {
+                header('Content-Type: application/json; charset=UTF-8', true, 500);
+            }
+            $payload = array(
+                'status'        => false,
+                'error_message' => 'The request could not be completed. Please check the parameters and try again.',
+            );
+            if (defined('ENVIRONMENT') && ENVIRONMENT !== 'production') {
+                $payload['detail'] = $message;
+            }
+            echo json_encode($payload);
+        };
+
+        set_exception_handler(function ($e) use ($emit) {
+            $emit($e->getMessage());
+            exit;
+        });
+
+        register_shutdown_function(function () use ($emit) {
+            $err = error_get_last();
+            if ($err !== null && in_array($err['type'], array(E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR), true)) {
+                $emit($err['message']);
+            }
+        });
+    }
+
+    /**
+     * Establish the staff/user context for a customapi request.
+     *
+     * Many models resolve the acting user's role through
+     * customlib::getStaffRole() / getUserData(), which read the 'admin'
+     * session. API requests are token authenticated and carry no session, so
+     * those lookups returned NULL and produced malformed SQL (for example
+     * Notification_model built "WHERE role_id=" with no value).
+     *
+     * When the caller supplies a user id, we resolve that staff member and
+     * populate the same session structure the web login builds, so the shared
+     * models behave identically for API and web. Without a usable id the
+     * request simply proceeds with no context, exactly as before.
+     */
+    protected function establishApiUserContext()
+    {
+        if ($this->session->has_userdata('admin')) {
+            return;
+        }
+
+        $user_id = $this->input->post('user_id', true);
+        foreach (array('staff_id', 'StaffID', 'id') as $alt) {
+            if (!empty($user_id)) {
+                break;
+            }
+            $user_id = $this->input->post($alt, true);
+        }
+
+        if (empty($user_id) || !is_numeric($user_id)) {
+            return;
+        }
+
+        $staff = $this->staff_model->staffDatabyID($user_id);
+        if (!$staff || empty($staff->roles) || !$staff->is_active) {
+            return;
+        }
+
+        $setting = $this->setting_model->get();
+        if (empty($setting[0])) {
+            return;
+        }
+        $setting = $setting[0];
+
+        $username = trim($staff->name . ' ' . (isset($staff->surname) ? $staff->surname : ''));
+
+        $this->session->set_userdata('admin', array(
+            'id'                     => $staff->id,
+            'username'               => $username,
+            'email'                  => $staff->email,
+            'image'                  => $staff->image,
+            'roles'                  => $staff->roles,
+            'date_format'            => $setting['date_format'],
+            'currency'               => ($staff->currency == 0) ? $setting['currency'] : $staff->currency,
+            'currency_base_price'    => ($staff->base_price == 0) ? $setting['base_price'] : $staff->base_price,
+            'currency_format'        => $setting['currency_format'],
+            'currency_symbol'        => ($staff->symbol == "0") ? $setting['currency_symbol'] : $staff->symbol,
+            'currency_place'         => $setting['currency_place'],
+            'start_month'            => $setting['start_month'],
+            'start_week'             => date("w", strtotime($setting['start_week'])),
+            'school_name'            => $setting['name'],
+            'sch_name'               => $setting['name'],
+            'timezone'               => $setting['timezone'],
+            'language'               => array('lang_id' => $setting['lang_id'], 'language' => $setting['language']),
+            'is_rtl'                 => 'disabled',
+            'theme'                  => $setting['theme'],
+            'gender'                 => $staff->gender,
+            'superadmin_restriction' => $setting['superadmin_restriction'],
+            'saas_key'               => $setting['saas_key'],
+        ));
+    }
+
+}
+
+/**
+ * Permission-check stub used only for customapi/* requests. The mobile/API
+ * layer is authenticated by token, not by an admin session, so the web RBAC
+ * privileges do not apply — every check passes and never fatals.
+ */
+class Api_Rbac_Stub
+{
+    /**
+     * Role/permission gate. The API is token authenticated and has no admin
+     * session to derive roles from, so the check always passes.
+     */
+    public function hasPrivilege($category = null, $permission = null)
+    {
+        return true;
+    }
+
+    /**
+     * NOT a permission check — this reports which modules are enabled for the
+     * installation, and callers branch on the real value. It must therefore
+     * delegate to the same model the web RBAC library uses.
+     */
+    public function module_permission($module_name)
+    {
+        $CI = &get_instance();
+        if (!isset($CI->Module_model)) {
+            $CI->load->model('Module_model');
+        }
+        return $CI->Module_model->getPermissionByModulename($module_name);
+    }
+
+    /**
+     * Web RBAC renders an "unauthorized" HTML page here; the API returns JSON.
+     */
+    public function unautherized()
+    {
+        $CI = &get_instance();
+        return $CI->output
+            ->set_content_type('application/json')
+            ->set_output(json_encode([
+                'status'        => false,
+                'error_message' => 'You are not authorized to perform this action.',
+            ]));
+    }
 }
 
 class Admin_Controller extends MY_Controller

@@ -22,10 +22,13 @@ class Teacher extends My_Controller
         $this->session->set_userdata('sub_menu', 'teacher/index');
         $data['title']       = 'Add Teacher';
         $data['teacherlist'] = $this->teacher_model->get();         
-        $data['genderList']  = $this->customlib->getGender(); 
-        $this->load->view('layout/header', $data);
-        $this->load->view('admin/teacher/teacherList', $data);
-        $this->load->view('layout/footer', $data);
+        $data['genderList']  = $this->customlib->getGender();
+
+        return $this->output->set_output(json_encode([
+            'status' => true,
+            'success_message' => 'Teacher list loaded successfully.',
+            'data' => $data,
+        ]));
     }
 
     public function getSubjctByClassandSection()
@@ -50,10 +53,7 @@ class Teacher extends My_Controller
         $data['classlist']   = $class;
         $userdata            = $this->customlib->getUserData();
 
-        $this->load->view('layout/header', $data);
-        $this->load->view('admin/teacher/assignTeacher', $data);
-        $this->load->view('layout/footer', $data);
-        if ($this->input->server('REQUEST_METHOD') == "POST") {
+        if ($this->input->post('i') !== null) {
             $loop  = $this->input->post('i');
             $array = array();
             $dt    = array();
@@ -82,9 +82,19 @@ class Teacher extends My_Controller
             $ids              = $array;
             $class_section_id = $dt['id'];
             $this->teachersubject_model->deleteBatch($ids, $class_section_id);
-            $this->session->set_flashdata('msg', '<div class="alert alert-success">' . $this->lang->line('success_message') . '</div>');
-            redirect('admin/teacher/assignteacher');
+
+            return $this->output->set_output(json_encode([
+                'status' => true,
+                'success_message' => 'Teacher assigned successfully.',
+                'data' => $data,
+            ]));
         }
+
+        return $this->output->set_output(json_encode([
+            'status' => true,
+            'success_message' => 'Assign teacher data loaded successfully.',
+            'data' => $data,
+        ]));
     }
 
     public function viewassignteacher()
@@ -101,10 +111,7 @@ class Teacher extends My_Controller
         $data['classlist']   = $class;
         $userdata            = $this->customlib->getUserData();
 
-        $this->load->view('layout/header', $data);
-        $this->load->view('admin/teacher/viewassignTeacher', $data);
-        $this->load->view('layout/footer', $data);
-        if ($this->input->server('REQUEST_METHOD') == "POST") {
+        if ($this->input->post('i') !== null) {
             $loop  = $this->input->post('i');
             $array = array();
             foreach ($loop as $key => $value) {
@@ -131,9 +138,19 @@ class Teacher extends My_Controller
             $ids              = $array;
             $class_section_id = $dt['id'];
             $this->teachersubject_model->deleteBatch($ids, $class_section_id);
-            $this->session->set_flashdata('msg', '<div class="alert alert-success">' . $this->lang->line('success_message') . '</div>');
-            redirect('admin/teacher/assignteacher');
+
+            return $this->output->set_output(json_encode([
+                'status' => true,
+                'success_message' => 'Teacher assigned successfully.',
+                'data' => $data,
+            ]));
         }
+
+        return $this->output->set_output(json_encode([
+            'status' => true,
+            'success_message' => 'Assigned teacher data loaded successfully.',
+            'data' => $data,
+        ]));
     }
 
     public function getSubjectTeachers()
@@ -159,29 +176,61 @@ class Teacher extends My_Controller
         }
     }
 
-    public function view($id)
+    public function view($id = null)
     {
         if (!$this->rbac->hasPrivilege('assign_subject', 'can_view')) {
             access_denied();
         }
+
+        if (empty($id)) {
+            $id = $this->input->post('id', true);
+        }
+
+        if (empty($id)) {
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => 'Record id is required.',
+            ]));
+        }
+
         $data['title']          = 'Teacher List';
         $teacher                = $this->teacher_model->get($id);
         $teachersubject         = $this->teachersubject_model->getTeacherClassSubjects($id);
         $data['teacher']        = $teacher;
         $data['teachersubject'] = $teachersubject;
-        $this->load->view('layout/header', $data);
-        $this->load->view('admin/teacher/teacherShow', $data);
-        $this->load->view('layout/footer', $data);
+
+        return $this->output->set_output(json_encode([
+            'status' => true,
+            'success_message' => 'Teacher detail loaded successfully.',
+            'data' => $data,
+        ]));
     }
 
-    public function delete($id)
+    public function delete($id = null)
     {
         if (!$this->rbac->hasPrivilege('assign_subject', 'can_delete')) {
             access_denied();
         }
+
+        if (empty($id)) {
+            $id = $this->input->post('id', true);
+        }
+
+        if (empty($id)) {
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => 'Record id is required.',
+            ]));
+        }
+
         $data['title'] = 'Teacher List';
         $this->teacher_model->remove($id);
-        redirect('admin/teacher/index');
+
+        return $this->output->set_output(json_encode([
+            'status' => true,
+            'success_message' => 'Teacher deleted successfully.',
+            'data' => $data,
+        ]));
     }
 
     public function create()
@@ -203,9 +252,11 @@ class Teacher extends My_Controller
             $data['teacherlist'] = $teacher_result;
             $genderList          = $this->customlib->getGender();
             $data['genderList']  = $genderList;
-            $this->load->view('layout/header', $data);
-            $this->load->view('admin/teacher/teacherCreate', $data);
-            $this->load->view('layout/footer', $data);
+
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => strip_tags(validation_errors()),
+            ]));
         } else {
             $data = array(
                 'name'     => $this->input->post('name'),
@@ -237,8 +288,11 @@ class Teacher extends My_Controller
 
             $this->mailsmsconf->mailsms('login_credential', $teacher_login_detail);
 
-            $this->session->set_flashdata('msg', '<div class="alert alert-success text-left">' . $this->lang->line('success_message') . '</div>');
-            redirect('admin/teacher/index');
+            return $this->output->set_output(json_encode([
+                'status' => true,
+                'success_message' => 'Teacher added successfully.',
+                'data' => $teacher_login_detail,
+            ]));
         }
     }
 
@@ -276,11 +330,22 @@ class Teacher extends My_Controller
         }
     }
 
-    public function edit($id)
+    public function edit($id = null)
     {
 
         if (!$this->rbac->hasPrivilege('assign_subject', 'can_edit')) {
             access_denied();
+        }
+
+        if (empty($id)) {
+            $id = $this->input->post('id', true);
+        }
+
+        if (empty($id)) {
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => 'Record id is required.',
+            ]));
         }
 
         $data['title']      = 'Edit Teacher';
@@ -300,9 +365,19 @@ class Teacher extends My_Controller
 
             $teacher_result      = $this->teacher_model->get();
             $data['teacherlist'] = $teacher_result;
-            $this->load->view('layout/header', $data);
-            $this->load->view('admin/teacher/teacherEdit', $data);
-            $this->load->view('layout/footer', $data);
+
+            if ($this->input->post('name') !== null) {
+                return $this->output->set_output(json_encode([
+                    'status' => false,
+                    'error_message' => strip_tags(validation_errors()),
+                ]));
+            }
+
+            return $this->output->set_output(json_encode([
+                'status' => true,
+                'success_message' => 'Teacher detail loaded successfully.',
+                'data' => $data,
+            ]));
         } else {
 
             $data = array(
@@ -323,8 +398,12 @@ class Teacher extends My_Controller
                 $data_img = array('id' => $id, 'image' => 'uploads/teacher_images/' . $img_name);
                 $this->teacher_model->add($data_img);
             }
-            $this->session->set_flashdata('msg', '<div class="alert alert-success text-center">' . $this->lang->line('success_message') . '</div>');
-            redirect('admin/teacher/index');
+
+            return $this->output->set_output(json_encode([
+                'status' => true,
+                'success_message' => 'Teacher updated successfully.',
+                'data' => $data,
+            ]));
         }
     }
 
@@ -355,13 +434,6 @@ class Teacher extends My_Controller
         $teacherlist = $this->staff_model->getStaffbyrole($role = 2);
 
         $data['teacherlist'] = $teacherlist;
-
-          return $this->output->set_output(json_encode([
-                        'status' => true,
-                        'success_message' => "assign_class_teacher ",
-                        'data' => $data
-                    ]));
-
 
         // if (!$this->rbac->hasPrivilege('assign_class_teacher', 'can_view')) {
         //     access_denied();
@@ -410,8 +482,12 @@ class Teacher extends My_Controller
                 $i++;
                 $this->classteacher_model->addClassTeacher($data);
             }
-            $this->session->set_flashdata('msg', '<div class="alert alert-success">' . $this->lang->line('success_message') . '</div>');
-            redirect('admin/teacher/assign_class_teacher');
+
+            return $this->output->set_output(json_encode([
+                'status' => true,
+                'success_message' => 'Class teacher assigned successfully.',
+                'data' => $data,
+            ]));
         }
         $classlist         = $this->class_model->get();
         $data['classlist'] = $classlist;
@@ -435,15 +511,32 @@ class Teacher extends My_Controller
 
         $data['teacherlist'] = $teacherlist;
 
-        $this->load->view('layout/header', $data);
-        $this->load->view('class/classTeacher', $data);
-        $this->load->view('layout/footer', $data);
+        return $this->output->set_output(json_encode([
+            'status' => true,
+            'success_message' => 'Class teacher data loaded successfully.',
+            'data' => $data,
+        ]));
     }
 
-    public function classteacheredit1111($class_id, $section_id)
+    public function classteacheredit1111($class_id = null, $section_id = null)
     {
         if (!$this->rbac->hasPrivilege('assign_class_teacher', 'can_edit')) {
             access_denied();
+        }
+
+        if (empty($class_id)) {
+            $class_id = $this->input->post('class_id', true);
+        }
+
+        if (empty($section_id)) {
+            $section_id = $this->input->post('section_id', true);
+        }
+
+        if (empty($class_id) || empty($section_id)) {
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => 'Record id is required.',
+            ]));
         }
 
         $result = $this->classteacher_model->teacherByClassSection($class_id, $section_id);
@@ -469,13 +562,30 @@ class Teacher extends My_Controller
         $sectionlist         = $this->section_model->get();
         $data['sectionlist'] = $sectionlist;
 
-        $this->load->view('layout/header', $data);
-        $this->load->view('class/classTeacherEdit', $data);
-        $this->load->view('layout/footer', $data);
+        return $this->output->set_output(json_encode([
+            'status' => true,
+            'success_message' => 'Class teacher detail loaded successfully.',
+            'data' => $data,
+        ]));
     }
 
-    public function update_class_teacher($class_id, $section_id)
+    public function update_class_teacher($class_id = null, $section_id = null)
     {
+        if (empty($class_id)) {
+            $class_id = $this->input->post('class_id', true);
+        }
+
+        if (empty($section_id)) {
+            $section_id = $this->input->post('section_id', true);
+        }
+
+        if (empty($class_id) || empty($section_id)) {
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => 'Record id is required.',
+            ]));
+        }
+
         $this->session->set_userdata('top_menu', 'Academics');
         $this->session->set_userdata('sub_menu', 'classes/index');
         $data['title']      = 'Add Class Teacher';
@@ -564,23 +674,46 @@ class Teacher extends My_Controller
 
                 $this->classteacher_model->delete($class_id, $section, $classteacher_delete_array);
             }
-            $this->session->set_flashdata('msg', '<div class="alert alert-success">' . $this->lang->line('update_message') . '</div>');
-            redirect('admin/teacher/assign_class_teacher');
+
+            return $this->output->set_output(json_encode([
+                'status' => true,
+                'success_message' => 'Class teacher updated successfully.',
+                'data' => array('class_id' => $class_id, 'section_id' => $section),
+            ]));
         }
 
-        $this->load->view('layout/header', $data);
-        $this->load->view('class/classTeacherEdit', $data);
-        $this->load->view('layout/footer', $data);
+        return $this->output->set_output(json_encode([
+            'status' => true,
+            'success_message' => 'Class teacher detail loaded successfully.',
+            'data' => $data,
+        ]));
     }
 
-    public function classteacherdelete($class_id, $section_id)
+    public function classteacherdelete($class_id = null, $section_id = null)
     {
+        if (empty($class_id)) {
+            $class_id = $this->input->post('class_id', true);
+        }
+
+        if (empty($section_id)) {
+            $section_id = $this->input->post('section_id', true);
+        }
+
         if ((!empty($class_id)) && (!empty($section_id))) {
 
             $this->classteacher_model->delete($class_id, $section_id, null);
-            $this->session->set_flashdata('msg', '<div class="alert alert-success text-center">' . $this->lang->line('delete_message') . '</div>');
-            redirect("admin/teacher/assign_class_teacher");
+
+            return $this->output->set_output(json_encode([
+                'status' => true,
+                'success_message' => 'Class teacher deleted successfully.',
+                'data' => array('class_id' => $class_id, 'section_id' => $section_id),
+            ]));
         }
+
+        return $this->output->set_output(json_encode([
+            'status' => false,
+            'error_message' => 'Record id is required.',
+        ]));
     }
 
 }

@@ -64,19 +64,41 @@ class FeeGroup extends My_Controller
                     ]));
     }
 
-    public function delete($id)
+    public function delete($id = null)
     {
         if (!$this->rbac->hasPrivilege('fees_group', 'can_delete')) {
             access_denied();
         }
+        if (empty($id)) {
+            $id = $this->input->post('id', true);
+        }
+        if (empty($id)) {
+            return $this->output->set_output(json_encode([
+                'status'        => false,
+                'error_message' => 'Record id is required.',
+            ]));
+        }
         $this->feegroup_model->remove($id);
-        redirect('admin/feegroup/index');
+        return $this->output->set_output(json_encode([
+            'status'          => true,
+            'success_message' => 'Fee group deleted successfully.',
+            'data'            => array('id' => $id),
+        ]));
     }
 
-    public function edit($id)
+    public function edit($id = null)
     {
         if (!$this->rbac->hasPrivilege('fees_group', 'can_edit')) {
             access_denied();
+        }
+        if (empty($id)) {
+            $id = $this->input->post('id', true);
+        }
+        if (empty($id)) {
+            return $this->output->set_output(json_encode([
+                'status'        => false,
+                'error_message' => 'Record id is required.',
+            ]));
         }
         $this->session->set_userdata('top_menu', 'Fees Collection');
         $this->session->set_userdata('sub_menu', 'admin/feegroup');
@@ -93,9 +115,10 @@ class FeeGroup extends My_Controller
         );
 
         if ($this->form_validation->run() == false) {
-            $this->load->view('layout/header', $data);
-            $this->load->view('admin/feegroup/feegroupEdit', $data);
-            $this->load->view('layout/footer', $data);
+            return $this->output->set_output(json_encode([
+                'status'        => false,
+                'error_message' => strip_tags(validation_errors()),
+            ]));
         } else {
             $data = array(
                 'id'          => $id,
@@ -103,8 +126,11 @@ class FeeGroup extends My_Controller
                 'description' => $this->input->post('description'),
             );
             $this->feegroup_model->add($data);
-            $this->session->set_flashdata('msg', '<div class="alert alert-success text-left">' . $this->lang->line('success_message') . '</div>');
-            redirect('admin/feegroup/index');
+            return $this->output->set_output(json_encode([
+                'status'          => true,
+                'success_message' => 'Fee group updated successfully.',
+                'data'            => $data,
+            ]));
         }
     }
 

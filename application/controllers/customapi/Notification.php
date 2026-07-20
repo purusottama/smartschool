@@ -35,8 +35,17 @@ class Notification extends MY_Controller
                     ]));
     }
 
-    public function delete($id)
+    public function delete($id = null)
     {
+        if (empty($id)) {
+            $id = $this->input->post('id', true);
+        }
+        if (empty($id)) {
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => 'Record id is required.',
+            ]));
+        }
         $userdata         = $this->customlib->getUserData();
         $user_id          = $userdata["id"];
         $usernotification = $this->notification_model->get($id);
@@ -46,8 +55,14 @@ class Notification extends MY_Controller
             }
         }
         $this->notification_model->remove($id);
-        unlink("./uploads/notice_board_images/" . $usernotification['attachment']);
-        redirect('admin/notification');
+        if (!empty($usernotification['attachment']) && file_exists("./uploads/notice_board_images/" . $usernotification['attachment'])) {
+            unlink("./uploads/notice_board_images/" . $usernotification['attachment']);
+        }
+        return $this->output->set_output(json_encode([
+            'status' => true,
+            'success_message' => 'Notification deleted successfully.',
+            'data' => array('id' => $id),
+        ]));
     }
 
     public function setting()
@@ -106,14 +121,20 @@ class Notification extends MY_Controller
             }
 
             $this->notificationsetting_model->updatebatch($update_array);
-            $this->session->set_flashdata('msg', '<div class="alert alert-success">' . $this->lang->line('update_message') . '</div>');
-            redirect('admin/notification/setting');
+            $data['notificationlist'] = $this->notificationsetting_model->get();
+            return $this->output->set_output(json_encode([
+                'status' => true,
+                'success_message' => 'Notification settings updated successfully.',
+                'data' => $data,
+            ]));
         }
 
         $data['title'] = 'Email Config List';
-        $this->load->view('layout/header', $data);
-        $this->load->view('admin/notification/setting', $data);
-        $this->load->view('layout/footer', $data);
+        return $this->output->set_output(json_encode([
+            'status' => true,
+            'success_message' => 'Notification settings list.',
+            'data' => $data,
+        ]));
     }
 
     public function read()
@@ -333,7 +354,10 @@ class Notification extends MY_Controller
               $data['sms_validation']    = 0;
         }
         if ($this->form_validation->run() == false) {
-
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => strip_tags(validation_errors()),
+            ]));
         } else {
             //code start
             //upload attachment if uploaded
@@ -471,20 +495,34 @@ class Notification extends MY_Controller
                 'attachment'    => $img_name,
             );
 
-            $id = $this->notification_model->insertBatch($data, $staff_roles);        
-            $this->session->set_flashdata('msg', '<div class="alert alert-success">' . $this->lang->line('success_message') . '</div>');
-            redirect('admin/notification/index');
+            $id = $this->notification_model->insertBatch($data, $staff_roles);
+            return $this->output->set_output(json_encode([
+                'status' => true,
+                'success_message' => 'Notification added successfully.',
+                'data' => $data,
+            ]));
         }
         $exam_result                    = $this->exam_model->get();
         $data['examlist']               = $exam_result;
         $data['superadmin_restriction'] = $this->customlib->superadmin_visible();
-        $this->load->view('layout/header', $data);
-        $this->load->view('admin/notification/notificationAdd', $data);
-        $this->load->view('layout/footer', $data);
+        return $this->output->set_output(json_encode([
+            'status' => true,
+            'success_message' => 'Add notification form data.',
+            'data' => $data,
+        ]));
     }
 
-    public function edit($id)
+    public function edit($id = null)
     {
+        if (empty($id)) {
+            $id = $this->input->post('id', true);
+        }
+        if (empty($id)) {
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => 'Record id is required.',
+            ]));
+        }
         $userdata         = $this->customlib->getUserData();
         $user_id          = $userdata["id"];
         $usernotification = $this->notification_model->get($id);
@@ -524,7 +562,10 @@ class Notification extends MY_Controller
         }
 
         if ($this->form_validation->run() == false) {
-
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => strip_tags(validation_errors()),
+            ]));
         } else {
 
             //code start
@@ -691,15 +732,20 @@ class Notification extends MY_Controller
                 }
             }
             
-            $this->notification_model->insertBatch($data, $insert, $to_be_del);            
-            $this->session->set_flashdata('msg', '<div class="alert alert-success">' . $this->lang->line('update_message') . '</div>');
-            redirect('admin/notification/index');
+            $this->notification_model->insertBatch($data, $insert, $to_be_del);
+            return $this->output->set_output(json_encode([
+                'status' => true,
+                'success_message' => 'Notification updated successfully.',
+                'data' => $data,
+            ]));
         }
         $exam_result      = $this->exam_model->get();
         $data['examlist'] = $exam_result;
-        $this->load->view('layout/header', $data);
-        $this->load->view('admin/notification/notificationEdit', $data);
-        $this->load->view('layout/footer', $data);
+        return $this->output->set_output(json_encode([
+            'status' => true,
+            'success_message' => 'Edit notification form data.',
+            'data' => $data,
+        ]));
     }
 
 

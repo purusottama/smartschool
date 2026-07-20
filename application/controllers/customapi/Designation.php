@@ -30,7 +30,17 @@ class Designation extends MY_Controller {
                     ]));
     }
 
-    function designationedit($id) {
+    function designationedit($id = null) {
+
+        if (empty($id)) {
+            $id = $this->input->post('id', true);
+        }
+        if (empty($id)) {
+            return $this->output->set_output(json_encode([
+                        'status' => false,
+                        'error_message' => 'Record id is required.',
+            ]));
+        }
 
         $result = $this->designation_model->get($id);
         $data["title"] = $this->lang->line('edit_designation');
@@ -38,15 +48,31 @@ class Designation extends MY_Controller {
 
         $designation = $this->designation_model->get();
         $data["designation"] = $designation;
-        $this->load->view("layout/header");
-        $this->load->view("admin/staff/designation", $data);
-        $this->load->view("layout/footer");
+        return $this->output->set_output(json_encode([
+                    'status' => true,
+                    'success_message' => 'Designation details fetched successfully.',
+                    'data' => $data,
+        ]));
     }
 
-    function designationdelete($id) {
+    function designationdelete($id = null) {
+
+        if (empty($id)) {
+            $id = $this->input->post('id', true);
+        }
+        if (empty($id)) {
+            return $this->output->set_output(json_encode([
+                        'status' => false,
+                        'error_message' => 'Record id is required.',
+            ]));
+        }
 
         $this->designation_model->deleteDesignation($id);
-        redirect('admin/designation/designation');
+        return $this->output->set_output(json_encode([
+                    'status' => true,
+                    'success_message' => 'Designation deleted successfully.',
+                    'data' => [],
+        ]));
     }
 
 }

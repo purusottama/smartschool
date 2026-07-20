@@ -147,12 +147,32 @@ class Enquiry extends My_Controller
         echo json_encode($array);
     }
 
-    public function follow_up($enquiry_id, $status, $created_by)
+    public function follow_up($enquiry_id = null, $status = null, $created_by = null)
     {
 
         if (!$this->rbac->hasPrivilege('follow_up_admission_enquiry', 'can_view')) {
             access_denied();
         }
+
+        if (empty($enquiry_id)) {
+            $enquiry_id = $this->input->post('id', true);
+        }
+
+        if (empty($status)) {
+            $status = $this->input->post('status', true);
+        }
+
+        if (empty($created_by)) {
+            $created_by = $this->input->post('created_by', true);
+        }
+
+        if (empty($enquiry_id)) {
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => 'Record id is required.',
+            ]));
+        }
+
         $data['id']              = $enquiry_id;
         $data['enquiry_data']    = $this->enquiry_model->getenquiry_list($enquiry_id, $status);
         
@@ -172,8 +192,17 @@ class Enquiry extends My_Controller
         $staffrole               = json_decode($getStaffRole);
         $data['staff_role']      = $staffrole->id;
          
-        $data['superadmin_rest'] = $this->session->userdata['admin']['superadmin_restriction']; 
-        $this->load->view('admin/frontoffice/follow_up_modal', $data);
+        // Use the proper session accessor and guard it: API requests are token
+        // authenticated and have no 'admin' session, so the old array-style
+        // access ($this->session->userdata['admin'][...]) warned on every call.
+        $admin_session           = $this->session->userdata('admin');
+        $data['superadmin_rest'] = isset($admin_session['superadmin_restriction']) ? $admin_session['superadmin_restriction'] : null;
+
+        return $this->output->set_output(json_encode([
+            'status' => true,
+            'success_message' => 'Follow up details fetched successfully.',
+            'data' => $data,
+        ]));
     }
 
     public function follow_up_insert()
@@ -211,25 +240,62 @@ class Enquiry extends My_Controller
         echo json_encode($array);
     }
 
-    public function follow_up_list($id)
+    public function follow_up_list($id = null)
     {
+        if (empty($id)) {
+            $id = $this->input->post('id', true);
+        }
+
+        if (empty($id)) {
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => 'Record id is required.',
+            ]));
+        }
+
         $data['id']             = $id;
         $data['follow_up_list'] = $this->enquiry_model->getfollow_up_list($id);
-        $this->load->view('admin/frontoffice/followuplist', $data);
+
+        return $this->output->set_output(json_encode([
+            'status' => true,
+            'success_message' => 'Follow up list fetched successfully.',
+            'data' => $data,
+        ]));
     }
 
-    public function details($id, $status)
+    public function details($id = null, $status = null)
     {
         if (!$this->rbac->hasPrivilege('admission_enquiry', 'can_view')) {
             access_denied();
         }
+
+        if (empty($id)) {
+            $id = $this->input->post('id', true);
+        }
+
+        if (empty($status)) {
+            $status = $this->input->post('status', true);
+        }
+
+        if (empty($id)) {
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => 'Record id is required.',
+            ]));
+        }
+
         $data['source']       = $this->enquiry_model->getComplaintSource();
         $data['enquiry_type'] = $this->enquiry_model->get_enquiry_type();
         $data['Reference']    = $this->enquiry_model->get_reference();        
         $data['class_list']   = $this->enquiry_model->getclasses();        
         $data['enquiry_data'] = $this->enquiry_model->getenquiry_list($id, $status);
         $data['stff_list']    = $this->staff_model->get();
-        $this->load->view('admin/frontoffice/enquiryeditmodalview', $data);
+
+        return $this->output->set_output(json_encode([
+            'status' => true,
+            'success_message' => 'Enquiry details fetched successfully.',
+            'data' => $data,
+        ]));
     }
 
     public function editpost($id)
@@ -275,15 +341,36 @@ class Enquiry extends My_Controller
         echo json_encode($array);
     }
 
-    public function follow_up_delete($follow_up_id, $enquiry_id)
+    public function follow_up_delete($follow_up_id = null, $enquiry_id = null)
     {
         if (!$this->rbac->hasPrivilege('follow_up_admission_enquiry', 'can_delete')) {
             access_denied();
         }
+
+        if (empty($follow_up_id)) {
+            $follow_up_id = $this->input->post('follow_up_id', true);
+        }
+
+        if (empty($enquiry_id)) {
+            $enquiry_id = $this->input->post('enquiry_id', true);
+        }
+
+        if (empty($follow_up_id)) {
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => 'Record id is required.',
+            ]));
+        }
+
         $this->enquiry_model->delete_follow_up($follow_up_id);
         $data['id']             = $enquiry_id;
         $data['follow_up_list'] = $this->enquiry_model->getfollow_up_list($enquiry_id);
-        $this->load->view('admin/frontoffice/followuplist', $data);
+
+        return $this->output->set_output(json_encode([
+            'status' => true,
+            'success_message' => 'Follow up deleted successfully.',
+            'data' => $data,
+        ]));
     }
 
     public function check_default($post_string)

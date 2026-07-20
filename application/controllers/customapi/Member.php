@@ -73,10 +73,20 @@ class Member extends My_Controller
         // $this->load->view('layout/footer');
     }
 
-    public function issue($id)
+    public function issue($id = null)
     {
         if (!$this->rbac->hasPrivilege('issue_return', 'can_view')) {
             access_denied();
+        }
+
+        if (empty($id)) {
+            $id = $this->input->post('id', true);
+        }
+        if (empty($id)) {
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => 'Record id is required.',
+            ]));
         }
 
         $this->session->set_userdata('top_menu', 'Library');
@@ -104,17 +114,22 @@ class Member extends My_Controller
                 'member_id'      => $this->input->post('member_id'),
             );
             $this->bookissue_model->add($data);
-            $this->session->set_flashdata('msg', '<div class="alert alert-success text-left">' . $this->lang->line('success_message') . '</div>');
-            redirect('admin/member/issue/' . $member_id);
+            return $this->output->set_output(json_encode([
+                'status' => true,
+                'success_message' => 'Book issued successfully.',
+                'data' => $data,
+            ]));
         }
-       
-        
+
+
         $data['bookList']     = $bookList;
-        
+
         $data['sch_setting'] = $this->sch_setting_detail;
-        $this->load->view('layout/header');
-        $this->load->view('admin/librarian/issue', $data);
-        $this->load->view('layout/footer');
+        return $this->output->set_output(json_encode([
+            'status' => true,
+            'success_message' => 'Member issue details loaded successfully.',
+            'data' => $data,
+        ]));
     }
 
     public function bookreturn()
@@ -158,9 +173,11 @@ class Member extends My_Controller
         $data['classlist'] = $class;
         $button            = $this->input->post('search');
         if ($this->input->server('REQUEST_METHOD') == "GET") {
-            $this->load->view('layout/header', $data);
-            $this->load->view('admin/member/studentSearch', $data);
-            $this->load->view('layout/footer', $data);
+            return $this->output->set_output(json_encode([
+                'status' => true,
+                'success_message' => 'Student search options loaded successfully.',
+                'data' => $data,
+            ]));
         } else {
             $class       = $this->input->post('class_id');
             $section     = $this->input->post('section_id');
@@ -190,9 +207,11 @@ class Member extends My_Controller
                 }
             }
             $data['sch_setting'] = $this->sch_setting_detail;
-            $this->load->view('layout/header', $data);
-            $this->load->view('admin/member/studentSearch', $data);
-            $this->load->view('layout/footer', $data);
+            return $this->output->set_output(json_encode([
+                'status' => true,
+                'success_message' => 'Student search results loaded successfully.',
+                'data' => $data,
+            ]));
         }
     }
 
@@ -253,10 +272,12 @@ class Member extends My_Controller
         $this->session->set_userdata('sub_menu', 'Library/member/teacher');
         $data['title']       = 'Add Teacher';
         $data['teacherlist'] = $this->teacher_model->getLibraryTeacher(); 
-        $data['genderList'] = $this->customlib->getGender();         
-        $this->load->view('layout/header', $data);
-        $this->load->view('admin/member/teacher', $data);
-        $this->load->view('layout/footer', $data);
+        $data['genderList'] = $this->customlib->getGender();
+        return $this->output->set_output(json_encode([
+            'status' => true,
+            'success_message' => 'Library teacher list loaded successfully.',
+            'data' => $data,
+        ]));
     }
 
     public function addteacher()
@@ -301,7 +322,10 @@ class Member extends My_Controller
     {
         $this->form_validation->set_rules('member_id', $this->lang->line('book'), 'trim|required|xss_clean');
         if ($this->form_validation->run() == false) {
-
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => strip_tags(validation_errors()),
+            ]));
         } else {
             $member_id = $this->input->post('member_id');
               $row_affected=$this->librarymember_model->surrender($member_id);

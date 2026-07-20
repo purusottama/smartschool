@@ -40,13 +40,10 @@ class Hostel extends MY_Controller
         $this->form_validation->set_rules('hostel_name', $this->lang->line('hostel_name'), 'trim|required|xss_clean');
         $this->form_validation->set_rules('type', $this->lang->line('type'), 'trim|required|xss_clean');
         if ($this->form_validation->run() == false) {
-            $listhostel         = $this->hostel_model->listhostel();
-            $data['listhostel'] = $listhostel;
-            $ght                = $this->customlib->getHostaltype();
-            $data['ght']        = $ght;
-            $this->load->view('layout/header');
-            $this->load->view('admin/hostel/createhostel', $data);
-            $this->load->view('layout/footer');
+            return $this->output->set_output(json_encode([
+                'status'        => false,
+                'error_message' => strip_tags(validation_errors()),
+            ]));
         } else {
             $data = array(
                 'hostel_name' => $this->input->post('hostel_name'),
@@ -56,15 +53,27 @@ class Hostel extends MY_Controller
                 'description' => $this->input->post('description'),
             );
             $this->hostel_model->addhostel($data);
-            $this->session->set_flashdata('msg', '<div class="alert alert-success text-left">' . $this->lang->line('success_message') . '</div>');
-            redirect('admin/hostel/index');
+            return $this->output->set_output(json_encode([
+                'status'          => true,
+                'success_message' => 'Hostel created successfully.',
+                'data'            => $data,
+            ]));
         }
     }
 
-    public function edit($id)
+    public function edit($id = null)
     {
         if (!$this->rbac->hasPrivilege('hostel', 'can_edit')) {
             access_denied();
+        }
+        if (empty($id)) {
+            $id = $this->input->post('id', true);
+        }
+        if (empty($id)) {
+            return $this->output->set_output(json_encode([
+                'status'        => false,
+                'error_message' => 'Record id is required.',
+            ]));
         }
         $data['title']      = 'Add Hostel';
         $data['id']         = $id;
@@ -75,11 +84,10 @@ class Hostel extends MY_Controller
         $this->form_validation->set_rules('hostel_name', $this->lang->line('hostel_name'), 'trim|required|xss_clean');
         $this->form_validation->set_rules('type', $this->lang->line('type'), 'trim|required|xss_clean');
         if ($this->form_validation->run() == false) {
-            $listhostel         = $this->hostel_model->listhostel();
-            $data['listhostel'] = $listhostel;
-            $this->load->view('layout/header');
-            $this->load->view('admin/hostel/edithostel', $data);
-            $this->load->view('layout/footer');
+            return $this->output->set_output(json_encode([
+                'status'        => false,
+                'error_message' => strip_tags(validation_errors()),
+            ]));
         } else {
             $data = array(
                 'id'          => $this->input->post('id'),
@@ -90,19 +98,35 @@ class Hostel extends MY_Controller
                 'description' => $this->input->post('description'),
             );
             $this->hostel_model->addhostel($data);
-            $this->session->set_flashdata('msg', '<div class="alert alert-success text-left">' . $this->lang->line('update_message') . '</div>');
-            redirect('admin/hostel/index');
+            return $this->output->set_output(json_encode([
+                'status'          => true,
+                'success_message' => 'Hostel updated successfully.',
+                'data'            => $data,
+            ]));
         }
     }
 
-    public function delete($id)
+    public function delete($id = null)
     {
         if (!$this->rbac->hasPrivilege('hostel', 'can_delete')) {
             access_denied();
         }
+        if (empty($id)) {
+            $id = $this->input->post('id', true);
+        }
+        if (empty($id)) {
+            return $this->output->set_output(json_encode([
+                'status'        => false,
+                'error_message' => 'Record id is required.',
+            ]));
+        }
         $data['title'] = 'Fees Master List';
         $this->hostel_model->remove($id);
-        redirect('admin/hostel/index');
+        return $this->output->set_output(json_encode([
+            'status'          => true,
+            'success_message' => 'Hostel deleted successfully.',
+            'data'            => array('id' => $id),
+        ]));
     }
 
 }

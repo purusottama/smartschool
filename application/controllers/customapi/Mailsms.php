@@ -51,9 +51,11 @@ class Mailsms extends MY_Controller
         $data['title']       = 'Add Mailsms';
         $listMessage         = $this->messages_model->schedule();
         $data['listMessage'] = $listMessage;
-        $this->load->view('layout/header');
-        $this->load->view('admin/mailsms/schedule', $data);
-        $this->load->view('layout/footer');
+        return $this->output->set_output(json_encode([
+            'status' => true,
+            'success_message' => 'Scheduled message list loaded successfully.',
+            'data' => $data,
+        ]));
     }
 
     public function search()
@@ -154,9 +156,11 @@ class Mailsms extends MY_Controller
         $data['birthDaysList']          = $birthDaysList;
         $data['sch_setting']            = $this->sch_setting_detail;
         $data['superadmin_restriction'] = $this->customlib->superadmin_visible();
-        $this->load->view('layout/header');
-        $this->load->view('admin/mailsms/compose', $data);
-        $this->load->view('layout/footer');
+        return $this->output->set_output(json_encode([
+            'status' => true,
+            'success_message' => 'Email compose options loaded successfully.',
+            'data' => $data,
+        ]));
     }
 
     public function compose_sms()
@@ -208,13 +212,24 @@ class Mailsms extends MY_Controller
         $data['sch_setting']            = $this->sch_setting_detail;
         $data['send_through_list']      = $this->send_through;
         $data['superadmin_restriction'] = $this->customlib->superadmin_visible();
-        $this->load->view('layout/header');
-        $this->load->view('admin/mailsms/compose_sms', $data);
-        $this->load->view('layout/footer');
+        return $this->output->set_output(json_encode([
+            'status' => true,
+            'success_message' => 'SMS compose options loaded successfully.',
+            'data' => $data,
+        ]));
     }
 
-    public function edit($id)
+    public function edit($id = null)
     {
+        if (empty($id)) {
+            $id = $this->input->post('id', true);
+        }
+        if (empty($id)) {
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => 'Record id is required.',
+            ]));
+        }
         $data['title']       = 'Add Vehicle';
         $data['id']          = $id;
         $editvehicle         = $this->vehicle_model->get($id);
@@ -224,9 +239,10 @@ class Mailsms extends MY_Controller
         $this->form_validation->set_rules('vehicle_no', $this->lang->line('vehicle_number'), 'trim|required|xss_clean');
         if ($this->form_validation->run() == false) {
 
-            $this->load->view('layout/header');
-            $this->load->view('admin/mailsms/edit', $data);
-            $this->load->view('layout/footer');
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => strip_tags(validation_errors()),
+            ]));
         } else {
             $manufacture_year = $this->input->post('manufacture_year');
             $data             = array(
@@ -240,16 +256,32 @@ class Mailsms extends MY_Controller
             );
             ($manufacture_year != "") ? $data['manufacture_year'] = $manufacture_year : '';
             $this->vehicle_model->add($data);
-            $this->session->set_flashdata('msg', '<div class="alert alert-success text-left">' . $this->lang->line('update_message') . '</div>');
-            redirect('admin/mailsms/index');
+            return $this->output->set_output(json_encode([
+                'status' => true,
+                'success_message' => 'Record updated successfully.',
+                'data' => $data,
+            ]));
         }
     }
 
-    public function delete($id)
+    public function delete($id = null)
     {
+        if (empty($id)) {
+            $id = $this->input->post('id', true);
+        }
+        if (empty($id)) {
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => 'Record id is required.',
+            ]));
+        }
         $data['title'] = 'Fees Master List';
         $this->vehicle_model->remove($id);
-        redirect('admin/mailsms/index');
+        return $this->output->set_output(json_encode([
+            'status' => true,
+            'success_message' => 'Record deleted successfully.',
+            'data' => $data,
+        ]));
     }
 
     public function send_individual()
@@ -1624,15 +1656,28 @@ class Mailsms extends MY_Controller
         return true;
     }
 
-    public function delete_email_template($id)
+    public function delete_email_template($id = null)
     {
         if (!$this->rbac->hasPrivilege('email_template', 'can_delete')) {
             access_denied();
         }
 
+        if (empty($id)) {
+            $id = $this->input->post('id', true);
+        }
+        if (empty($id)) {
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => 'Record id is required.',
+            ]));
+        }
+
         $this->messages_model->delete_email_template($id);
-        $this->session->set_flashdata('message', $this->lang->line('delete_message'));
-        redirect('admin/mailsms/email_template');
+        return $this->output->set_output(json_encode([
+            'status' => true,
+            'success_message' => 'Email template deleted successfully.',
+            'data' => array('id' => $id),
+        ]));
     }
 
     public function email_template_download($doc)
@@ -1706,8 +1751,11 @@ class Mailsms extends MY_Controller
 
         $id                        = $this->input->post('id');
         $data['sms_template_list'] = $this->messages_model->get_sms_template($id);
-        $page                      = $this->load->view('admin/mailsms/sms_template/_edit_sms_template', $data, true);
-        echo json_encode(array('status' => 1, 'page' => $page));
+        return $this->output->set_output(json_encode([
+            'status' => true,
+            'success_message' => 'SMS template details loaded successfully.',
+            'data' => $data,
+        ]));
     }
 
     public function update_sms_template()
@@ -1744,15 +1792,28 @@ class Mailsms extends MY_Controller
 
     }
 
-    public function delete_sms_template($id)
+    public function delete_sms_template($id = null)
     {
         if (!$this->rbac->hasPrivilege('sms_template', 'can_delete')) {
             access_denied();
         }
 
+        if (empty($id)) {
+            $id = $this->input->post('id', true);
+        }
+        if (empty($id)) {
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => 'Record id is required.',
+            ]));
+        }
+
         $this->messages_model->delete_sms_template($id);
-        $this->session->set_flashdata('message', $this->lang->line('delete_message'));
-        redirect('admin/mailsms/sms_template/sms_template');
+        return $this->output->set_output(json_encode([
+            'status' => true,
+            'success_message' => 'SMS template deleted successfully.',
+            'data' => array('id' => $id),
+        ]));
     }
 
     public function templatedata()
@@ -2092,13 +2153,23 @@ class Mailsms extends MY_Controller
         return $output;
     }
 
-    public function edit_schedule($id)
+    public function edit_schedule($id = null)
     {
         if (!$this->rbac->hasPrivilege('schedule_email_sms_log', 'can_edit')) {
             access_denied();
         }
 
-        $messagelist                    = $this->messages_model->schedule($id);
+        if (empty($id)) {
+            $id = $this->input->post('id', true);
+        }
+        if (empty($id)) {
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => 'Record id is required.',
+            ]));
+        }
+
+        $messagelist                  = $this->messages_model->schedule($id);
         $data['sch_setting']            = $this->sch_setting_detail;
         $data['roles']                  = $this->role_model->get();
         $data['superadmin_restriction'] = $this->customlib->superadmin_visible();
@@ -2112,9 +2183,11 @@ class Mailsms extends MY_Controller
             if ($messagelist['send_mail']) {
                 if ($messagelist['is_group'] == '1') {
                     $data['group_list'] = json_decode($messagelist['group_list']);
-                    $this->load->view('layout/header');
-                    $this->load->view('admin/mailsms/schedule/email/edit_email_group', $data);
-                    $this->load->view('layout/footer');
+                    return $this->output->set_output(json_encode([
+                        'status' => true,
+                        'success_message' => 'Scheduled group email details loaded successfully.',
+                        'data' => $data,
+                    ]));
                 } elseif ($messagelist['is_individual'] == '1') {
                     $user_list = json_decode($messagelist['user_list']);
 
@@ -2137,26 +2210,32 @@ class Mailsms extends MY_Controller
 
                     $data['user_list'] = json_encode($user_list);
 
-                    $this->load->view('layout/header');
-                    $this->load->view('admin/mailsms/schedule/email/edit_email_individual', $data);
-                    $this->load->view('layout/footer');
+                    return $this->output->set_output(json_encode([
+                        'status' => true,
+                        'success_message' => 'Scheduled individual email details loaded successfully.',
+                        'data' => $data,
+                    ]));
                 } elseif ($messagelist['is_class'] == '1') {
                     $data['classlist']        = $this->class_model->get();
                     $data['selected_section'] = $messagelist['schedule_section'];
                     $data['send_to']          = $messagelist['send_to'];
 
-                    $this->load->view('layout/header');
-                    $this->load->view('admin/mailsms/schedule/email/edit_email_class', $data);
-                    $this->load->view('layout/footer');
+                    return $this->output->set_output(json_encode([
+                        'status' => true,
+                        'success_message' => 'Scheduled class email details loaded successfully.',
+                        'data' => $data,
+                    ]));
                 }
             } else {
                 if ($messagelist['is_group'] == '1') {
                     $data['group_list']            = json_decode($messagelist['group_list']);
                     $data['selected_send_through'] = json_decode($messagelist['send_through']);
                     $data['send_through_list']     = $this->send_through;
-                    $this->load->view('layout/header');
-                    $this->load->view('admin/mailsms/schedule/sms/edit_sms_group', $data);
-                    $this->load->view('layout/footer');
+                    return $this->output->set_output(json_encode([
+                        'status' => true,
+                        'success_message' => 'Scheduled group SMS details loaded successfully.',
+                        'data' => $data,
+                    ]));
                 } elseif ($messagelist['is_individual'] == '1') {
                     $user_list = json_decode($messagelist['user_list']);
 
@@ -2178,9 +2257,11 @@ class Mailsms extends MY_Controller
 
                     $data['selected_send_through'] = json_decode($messagelist['send_through']);
                     $data['send_through_list']     = $this->send_through;
-                    $this->load->view('layout/header');
-                    $this->load->view('admin/mailsms/schedule/sms/edit_sms_individual', $data);
-                    $this->load->view('layout/footer');
+                    return $this->output->set_output(json_encode([
+                        'status' => true,
+                        'success_message' => 'Scheduled individual SMS details loaded successfully.',
+                        'data' => $data,
+                    ]));
                 } elseif ($messagelist['is_class'] == '1') {
                     $data['classlist']             = $this->class_model->get();
 
@@ -2191,12 +2272,19 @@ class Mailsms extends MY_Controller
                     $data['selected_send_through'] = json_decode($messagelist['send_through']);
                     $data['send_through_list']     = $this->send_through;
 
-                    $this->load->view('layout/header');
-                    $this->load->view('admin/mailsms/schedule/sms/edit_sms_class', $data);
-                    $this->load->view('layout/footer');
+                    return $this->output->set_output(json_encode([
+                        'status' => true,
+                        'success_message' => 'Scheduled class SMS details loaded successfully.',
+                        'data' => $data,
+                    ]));
                 }
             }
         }
+
+        return $this->output->set_output(json_encode([
+            'status' => false,
+            'error_message' => 'Scheduled message not found.',
+        ]));
     }
 
     public function update_group_schedule()

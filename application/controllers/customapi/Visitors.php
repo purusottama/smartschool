@@ -62,18 +62,45 @@ class Visitors extends My_Controller
         echo json_encode(array('message' => $this->lang->line('delete_message')));
     }
 
-    public function details($id)
+    public function details($id = null)
     {
         if (!$this->rbac->hasPrivilege('visitor_book', 'can_view')) {
             access_denied();
         }
 
+        if (empty($id)) {
+            $id = $this->input->post('id', true);
+        }
+
+        if (empty($id)) {
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => 'Record id is required.',
+            ]));
+        }
+
         $data['data'] = $this->visitors_model->visitors_list($id);
-        $this->load->view('admin/frontoffice/visitormodelview', $data);
+
+        return $this->output->set_output(json_encode([
+            'status' => true,
+            'success_message' => 'Visitor detail loaded successfully.',
+            'data' => $data,
+        ]));
     }
 
-    public function download($id)
+    public function download($id = null)
     {
+        if (empty($id)) {
+            $id = $this->input->post('id', true);
+        }
+
+        if (empty($id)) {
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => 'Record id is required.',
+            ]));
+        }
+
         $result = $this->visitors_model->visitors_list($id);
         $this->media_storage->filedownload($result['image'], "./uploads/front_office/visitors");
     }
@@ -312,9 +339,12 @@ class Visitors extends My_Controller
         $userdata             = $this->customlib->getUserData();
         $staffid              = $userdata['id'];
         $data['visitor_list'] = $this->visitors_model->visitorbystaffid($staffid);
-        $this->load->view('layout/header');
-        $this->load->view('admin/frontoffice/staffvisitorview', $data);
-        $this->load->view('layout/footer');
+
+        return $this->output->set_output(json_encode([
+            'status' => true,
+            'success_message' => 'Staff visitor list loaded successfully.',
+            'data' => $data,
+        ]));
     }
 
 }

@@ -144,24 +144,55 @@ class Timetable extends My_Controller
         // $this->load->view('layout/footer', $data);
     }
 
-    public function view($id)
+    public function view($id = null)
     {
         if (!$this->rbac->hasPrivilege('class_timetable', 'can_view')) {
             access_denied();
         }
+
+        if (empty($id)) {
+            $id = $this->input->post('id', true);
+        }
+
+        if (empty($id)) {
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => 'Record id is required.',
+            ]));
+        }
+
         $data['title'] = $this->lang->line('mark_list');
         $mark          = $this->mark_model->get($id);
         $data['mark']  = $mark;
-        $this->load->view('layout/header', $data);
-        $this->load->view('admin/timetable/timetableShow', $data);
-        $this->load->view('layout/footer', $data);
+
+        return $this->output->set_output(json_encode([
+            'status' => true,
+            'success_message' => 'Timetable detail loaded successfully.',
+            'data' => $data,
+        ]));
     }
 
-    public function delete($id)
+    public function delete($id = null)
     {
+        if (empty($id)) {
+            $id = $this->input->post('id', true);
+        }
+
+        if (empty($id)) {
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => 'Record id is required.',
+            ]));
+        }
+
         $data['title'] = 'Mark List';
         $this->mark_model->remove($id);
-        redirect('admin/timetable/index');
+
+        return $this->output->set_output(json_encode([
+            'status' => true,
+            'success_message' => 'Record deleted successfully.',
+            'data' => $data,
+        ]));
     }
 
     public function create()
@@ -198,17 +229,21 @@ class Timetable extends My_Controller
         $data['subject_group_id'] = $subject_group_id;
 
         if ($this->form_validation->run() == false) {
-            $this->load->view('layout/header', $data);
-            $this->load->view('admin/timetable/timetableCreate', $data);
-            $this->load->view('layout/footer', $data);
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => strip_tags(validation_errors()),
+            ]));
         } else {
             $getDaysnameList         = $this->customlib->getDaysname();
             $data['getDaysnameList'] = $getDaysnameList;
             $subject                 = $this->subjectgroup_model->getGroupsubjects($subject_group_id);
             $data['subject']         = $subject;
-            $this->load->view('layout/header', $data);
-            $this->load->view('admin/timetable/timetableCreate', $data);
-            $this->load->view('layout/footer', $data);
+
+            return $this->output->set_output(json_encode([
+                'status' => true,
+                'success_message' => 'Timetable create data loaded successfully.',
+                'data' => $data,
+            ]));
         }
     }
 
@@ -254,25 +289,48 @@ class Timetable extends My_Controller
             }
         }
 
-        $this->load->view('layout/header', $data);
-        $this->load->view('admin/timetable/classreport', $data);
-        $this->load->view('layout/footer', $data);
+        return $this->output->set_output(json_encode([
+            'status' => true,
+            'success_message' => 'Class timetable report loaded successfully.',
+            'data' => $data,
+        ]));
     }
 
-    public function edit($id)
+    public function edit($id = null)
     {
         if (!$this->rbac->hasPrivilege('class_timetable', 'can_edit')) {
             access_denied();
         }
+
+        if (empty($id)) {
+            $id = $this->input->post('id', true);
+        }
+
+        if (empty($id)) {
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => 'Record id is required.',
+            ]));
+        }
+
         $data['title'] = $this->lang->line('edit_mark');
         $data['id']    = $id;
         $mark          = $this->mark_model->get($id);
         $data['mark']  = $mark;
         $this->form_validation->set_rules('name', $this->lang->line('mark'), 'trim|required|xss_clean');
         if ($this->form_validation->run() == false) {
-            $this->load->view('layout/header', $data);
-            $this->load->view('admin/timetable/timetableEdit', $data);
-            $this->load->view('layout/footer', $data);
+            if ($this->input->post('name') !== null) {
+                return $this->output->set_output(json_encode([
+                    'status' => false,
+                    'error_message' => strip_tags(validation_errors()),
+                ]));
+            }
+
+            return $this->output->set_output(json_encode([
+                'status' => true,
+                'success_message' => 'Timetable detail loaded successfully.',
+                'data' => $data,
+            ]));
         } else {
             $data = array(
                 'id'   => $id,
@@ -280,8 +338,12 @@ class Timetable extends My_Controller
                 'note' => $this->input->post('note'),
             );
             $this->mark_model->add($data);
-            $this->session->set_flashdata('msg', '<div mark="alert alert-success text-center">' . $this->lang->line('success_message') . '</div>');
-            redirect('admin/timetable/index');
+
+            return $this->output->set_output(json_encode([
+                'status' => true,
+                'success_message' => 'Record updated successfully.',
+                'data' => $data,
+            ]));
         }
     }
 

@@ -65,24 +65,33 @@ class Complaint extends My_Controller
             */
     }
 
-    public function edit($id)
+    public function edit($id = null)
     {
         if (!$this->rbac->hasPrivilege('complaint', 'can_edit')) {
             access_denied();
         }
+
+        if (empty($id)) {
+            $id = $this->input->post('id', true);
+        }
+
+        if (empty($id)) {
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => 'Record id is required.',
+            ]));
+        }
+
         $this->form_validation->set_rules('name', $this->lang->line('complaint_by'), 'required');
         $this->form_validation->set_rules('file', $this->lang->line('file'), 'callback_handle_upload[file]');
 
         $data['complaint_data'] = $this->complaint_Model->complaint_list($id);
 
         if ($this->form_validation->run() == false) {
-            $data['complaint_list'] = $this->complaint_Model->complaint_list();
-
-            $data['complaint_type']  = $this->complaint_Model->getComplaintType();
-            $data['complaintsource'] = $this->complaint_Model->getComplaintSource();
-            $this->load->view('layout/header');
-            $this->load->view('admin/frontoffice/complainteditview', $data);
-            $this->load->view('layout/footer');
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => strip_tags(validation_errors()),
+            ]));
         } else {
 
             $complaint = array(
@@ -110,36 +119,78 @@ class Complaint extends My_Controller
             }
 
             $this->complaint_Model->compalaint_update($id, $complaint);
-            $this->session->set_flashdata('msg', '<div class="alert alert-success">' . $this->lang->line('update_message') . '</div>');
-            redirect('admin/complaint');
+
+            return $this->output->set_output(json_encode([
+                'status' => true,
+                'success_message' => 'Complaint updated successfully.',
+                'data' => $complaint,
+            ]));
         }
     }
 
-    public function details($id)
+    public function details($id = null)
     {
         if (!$this->rbac->hasPrivilege('complaint', 'can_view')) {
             access_denied();
         }
 
+        if (empty($id)) {
+            $id = $this->input->post('id', true);
+        }
+
+        if (empty($id)) {
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => 'Record id is required.',
+            ]));
+        }
+
         $data['complaint_data'] = $this->complaint_Model->complaint_list($id);
-        $this->load->view('admin/frontoffice/Complaintmodalview', $data);
+
+        return $this->output->set_output(json_encode([
+            'status' => true,
+            'success_message' => 'Complaint details fetched successfully.',
+            'data' => $data,
+        ]));
     }
 
-    public function delete($id)
+    public function delete($id = null)
     {
         if (!$this->rbac->hasPrivilege('complaint', 'can_delete')) {
             access_denied();
         }
+
+        if (empty($id)) {
+            $id = $this->input->post('id', true);
+        }
+
+        if (empty($id)) {
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => 'Record id is required.',
+            ]));
+        }
+
         $row = $this->complaint_Model->complaint_list($id);
+
+        if (empty($row)) {
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => 'Complaint not found.',
+            ]));
+        }
 
         if ($row['documents'] != '') {
             $this->media_storage->filedelete($row['documents'], "uploads/front_office/complaints/");
         }
 
         $this->complaint_Model->delete($id);
-        $this->session->set_flashdata('msg', '<div class="alert alert-success">' . $this->lang->line('delete_message') . '</div>');
 
-        redirect('admin/complaint');
+        return $this->output->set_output(json_encode([
+            'status' => true,
+            'success_message' => 'Complaint deleted successfully.',
+            'data' => array('id' => $id),
+        ]));
     }
 
     public function download($id)

@@ -24,12 +24,14 @@ class Expensehead extends My_Controller
         // if (!$this->rbac->hasPrivilege('expense_head', 'can_view')) {
         //     access_denied();
         // }
-        $this->session->set_userdata('top_menu', 'Expenses');
-        $this->session->set_userdata('sub_menu', 'expenseshead/index');
-        $data['title'] = 'Expense Head List';
-        $this->load->view('layout/header', $data);
-        $this->load->view('admin/expensehead/expenseheadList', $data);
-        $this->load->view('layout/footer', $data);
+        $data['title']        = 'Expense Head List';
+        $data['categorylist'] = $this->expensehead_model->get();
+
+        return $this->output->set_output(json_encode([
+            'status' => true,
+            'success_message' => 'Expense head list fetched successfully.',
+            'data' => $data,
+        ]));
     }
 
     public function ajaxSearch()
@@ -74,27 +76,59 @@ class Expensehead extends My_Controller
 
     }
 
-    public function view($id)
+    public function view($id = null)
     {
         if (!$this->rbac->hasPrivilege('expense_head', 'can_view')) {
             access_denied();
         }
+
+        if (empty($id)) {
+            $id = $this->input->post('id', true);
+        }
+
+        if (empty($id)) {
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => 'Record id is required.',
+            ]));
+        }
+
         $data['title']    = $this->lang->line('expense_head_list');
         $category         = $this->expensehead_model->get($id);
         $data['category'] = $category;
-        $this->load->view('layout/header', $data);
-        $this->load->view('admin/expensehead/expenseheadShow', $data);
-        $this->load->view('layout/footer', $data);
+
+        return $this->output->set_output(json_encode([
+            'status' => true,
+            'success_message' => 'Expense head details fetched successfully.',
+            'data' => $data,
+        ]));
     }
 
-    public function delete($id)
+    public function delete($id = null)
     {
         if (!$this->rbac->hasPrivilege('expense_head', 'can_delete')) {
             access_denied();
         }
+
+        if (empty($id)) {
+            $id = $this->input->post('id', true);
+        }
+
+        if (empty($id)) {
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => 'Record id is required.',
+            ]));
+        }
+
         $data['title'] = 'Expense Head List';
         $this->expensehead_model->remove($id);
-        redirect('admin/expensehead/index');
+
+        return $this->output->set_output(json_encode([
+            'status' => true,
+            'success_message' => 'Expense head deleted successfully.',
+            'data' => array('id' => $id),
+        ]));
     }
 
     public function create()
@@ -107,25 +141,42 @@ class Expensehead extends My_Controller
         $data['categorylist'] = $category_result;
         $this->form_validation->set_rules('expensehead', $this->lang->line('expense_head'), 'trim|required|xss_clean');
         if ($this->form_validation->run() == false) {
-            $this->load->view('layout/header', $data);
-            $this->load->view('admin/expensehead/expenseheadList', $data);
-            $this->load->view('layout/footer', $data);
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => strip_tags(validation_errors()),
+            ]));
         } else {
             $data = array(
                 'exp_category' => $this->input->post('expensehead'),
                 'description'  => $this->input->post('description'),
             );
             $this->expensehead_model->add($data);
-            $this->session->set_flashdata('msg', '<div class="alert alert-success text-left">' . $this->lang->line('success_message') . '</div>');
-            redirect('admin/expensehead/index');
+
+            return $this->output->set_output(json_encode([
+                'status' => true,
+                'success_message' => 'Expense head created successfully.',
+                'data' => $data,
+            ]));
         }
     }
 
-    public function edit($id)
+    public function edit($id = null)
     {
         if (!$this->rbac->hasPrivilege('expense', 'can_edit')) {
             access_denied();
         }
+
+        if (empty($id)) {
+            $id = $this->input->post('id', true);
+        }
+
+        if (empty($id)) {
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => 'Record id is required.',
+            ]));
+        }
+
         $data['title']        = 'Edit Expense Head';
         $category_result      = $this->expensehead_model->get();
         $data['categorylist'] = $category_result;
@@ -134,9 +185,10 @@ class Expensehead extends My_Controller
         $data['expensehead']  = $category;
         $this->form_validation->set_rules('expensehead', $this->lang->line('expense_head'), 'trim|required|xss_clean');
         if ($this->form_validation->run() == false) {
-            $this->load->view('layout/header', $data);
-            $this->load->view('admin/expensehead/expenseheadEdit', $data);
-            $this->load->view('layout/footer', $data);
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => strip_tags(validation_errors()),
+            ]));
         } else {
             $data = array(
                 'id'           => $id,
@@ -144,8 +196,12 @@ class Expensehead extends My_Controller
                 'description'  => $this->input->post('description'),
             );
             $this->expensehead_model->add($data);
-            $this->session->set_flashdata('msg', '<div class="alert alert-success">' . $this->lang->line('update_message') . '</div>');
-            redirect('admin/expensehead/index');
+
+            return $this->output->set_output(json_encode([
+                'status' => true,
+                'success_message' => 'Expense head updated successfully.',
+                'data' => $data,
+            ]));
         }
     }
 

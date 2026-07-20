@@ -112,17 +112,32 @@ class Expense extends My_Controller
         return true;
     }
 
-    public function view($id)
+    public function view($id = null)
     {
         if (!$this->rbac->hasPrivilege('expense', 'can_view')) {
             access_denied();
         }
+
+        if (empty($id)) {
+            $id = $this->input->post('id', true);
+        }
+
+        if (empty($id)) {
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => 'Record id is required.',
+            ]));
+        }
+
         $data['title']   = 'Fees Master List';
         $expense         = $this->expense_model->get($id);
         $data['expense'] = $expense;
-        $this->load->view('layout/header', $data);
-        $this->load->view('expense/expenseShow', $data);
-        $this->load->view('layout/footer', $data);
+
+        return $this->output->set_output(json_encode([
+            'status' => true,
+            'success_message' => 'Expense details fetched successfully.',
+            'data' => $data,
+        ]));
     }
 
     public function getByFeecategory()
@@ -146,19 +161,43 @@ class Expense extends My_Controller
         echo json_encode($array);
     }
 
-    public function delete($id)
+    public function delete($id = null)
     {
         if (!$this->rbac->hasPrivilege('expense', 'can_delete')) {
             access_denied();
         }
 
+        if (empty($id)) {
+            $id = $this->input->post('id', true);
+        }
+
+        if (empty($id)) {
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => 'Record id is required.',
+            ]));
+        }
+
         $row = $this->expense_model->get($id);
+
+        if (empty($row)) {
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => 'Expense record not found.',
+            ]));
+        }
+
         if ($row['documents'] != '') {
             $this->media_storage->filedelete($row['documents'], "uploads/school_expense/");
         }
 
         $this->expense_model->remove($id);
-        redirect('admin/expense/index');
+
+        return $this->output->set_output(json_encode([
+            'status' => true,
+            'success_message' => 'Expense deleted successfully.',
+            'data' => array('id' => $id),
+        ]));
     }
 
     public function create()
@@ -169,25 +208,41 @@ class Expense extends My_Controller
         $data['title'] = 'Add Fees Master';
         $this->form_validation->set_rules('expense', $this->lang->line('fees_master'), 'trim|required|xss_clean');
         if ($this->form_validation->run() == false) {
-            $this->load->view('layout/header', $data);
-            $this->load->view('expense/expenseCreate', $data);
-            $this->load->view('layout/footer', $data);
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => strip_tags(validation_errors()),
+            ]));
         } else {
             $data = array(
                 'expense' => $this->input->post('expense'),
             );
             $this->expense_model->add($data);
-            $this->session->set_flashdata('msg', '<div class="alert alert-success text-left">' . $this->lang->line('success_message') . '</div>');
-            redirect('expense/index');
+
+            return $this->output->set_output(json_encode([
+                'status' => true,
+                'success_message' => 'Expense created successfully.',
+                'data' => $data,
+            ]));
         }
     }
 
-    public function edit($id)
+    public function edit($id = null)
     {
         if (!$this->rbac->hasPrivilege('expense', 'can_edit')) {
             access_denied();
         }
-    
+
+        if (empty($id)) {
+            $id = $this->input->post('id', true);
+        }
+
+        if (empty($id)) {
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => 'Record id is required.',
+            ]));
+        }
+
         $data['id']      = $id;
         $expense         = $this->expense_model->get($id);
         $data['expense'] = $expense;    
@@ -201,9 +256,10 @@ class Expense extends My_Controller
         $this->form_validation->set_rules('name', $this->lang->line('name'), 'trim|required|xss_clean');
         $this->form_validation->set_rules('date', $this->lang->line('date'), 'trim|required|xss_clean');
         if ($this->form_validation->run() == false) {
-            $this->load->view('layout/header', $data);
-            $this->load->view('admin/expense/expenseEdit', $data);
-            $this->load->view('layout/footer', $data);
+            return $this->output->set_output(json_encode([
+                'status' => false,
+                'error_message' => strip_tags(validation_errors()),
+            ]));
         } else {
             $data = array(
                 'id'          => $id,
@@ -228,10 +284,13 @@ class Expense extends My_Controller
                 $this->media_storage->filedelete($expense['documents'], "uploads/school_expense");
             }
 
-            $insert_id = $this->expense_model->add($data);       
+            $insert_id = $this->expense_model->add($data);
 
-            $this->session->set_flashdata('msg', '<div class="alert alert-success text-left">' . $this->lang->line('update_message') . '</div>');
-            redirect('admin/expense/index');
+            return $this->output->set_output(json_encode([
+                'status' => true,
+                'success_message' => 'Expense updated successfully.',
+                'data' => $data,
+            ]));
         }
     }
 
@@ -242,13 +301,13 @@ class Expense extends My_Controller
         }
         $data['searchlist']  = $this->customlib->get_searchtype();
         $data['search_type'] = '';
-        $this->session->set_userdata('top_menu', 'Expenses');
-        $this->session->set_userdata('sub_menu', 'expense/expensesearch');
         $data['title'] = 'Search Expense';
-        $this->load->view('layout/header', $data);
-        $this->load->view('admin/expense/expenseSearch', $data);
-        $this->load->view('layout/footer', $data);
 
+        return $this->output->set_output(json_encode([
+            'status' => true,
+            'success_message' => 'Expense search options fetched successfully.',
+            'data' => $data,
+        ]));
     }
     public function getexpenselist()
     {
